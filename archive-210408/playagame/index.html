@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
+   <!-- <link rel="shortcut icon" href="/retail/images/favicon.ico"> -->
+  <title>V2 - Play a Game</title>
+  <link href="../css/style.css" rel="stylesheet" type="text/css">
+  <script src='https://cdn.scaledrone.com/scaledrone.min.js'></script>
+
+  <style>
+    body {
+      width: clamp(340px, 90%, 800px);
+      margin: auto;
+    }  
+    ul {
+      list-style-type: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="pre-game">
+    <fieldset>
+      <legend>Select a game</legend>
+      <label for="game_code">Game Code</label>
+      <input type="text" id="game_code" type="number" placeholder="A four digit number"/>
+      <br/>
+      <label for="game_code">Your Handle</label>
+      <input type="text" id="player_handle" type="number"/>
+      <button id="btn-register">Sign into game</button>
+    </fieldset>
+  </div>
+  <div id="game" hidden>
+    <div id="main"></div>
+
+    <input type="checkbox" id="followup-control" class="modal">
+    <div>
+      <div class="card">
+        <label for="followup-control" class="modal-close" ></label>
+        <h3 class="section">Correct!</h3>
+        <p id="followup" class="section"></p>
+      </div>
+    </div>
+  
+    <input type="checkbox" id="hint-control" class="modal">
+    <div>
+      <div class="card">
+        <label for="hint-control" class="modal-close" ></label>
+        <h3 class="section">Hint:</h3>
+        <p id="hint" class="section"></p>
+      </div>
+    </div>
+  </div>
+
+<script>
+    const $ = selector => document.querySelector(selector) 
+    var questions
+
+    // async function request(relName, query, data) {
+    //   const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYxNDQ0MjY4OSwiZXhwIjoxOTMwMDE4Njg5fQ.TBULgqU-TgI1gL0iScxM0k4B1xTBnQ_q0XLpdu7qnAs'
+    //   const dbId = 'cqxvknmoofzuhxbonmoj'
+    //   const method = query ? (data ? (data == 'DELETE' ? 'DELETE' : 'PATCH') : 'GET') : data ? 'POST' : 'GET'
+    //   let queryString = ''
+    //   if (query) {
+    //     if (!query.select) query.select = ['*']
+    //     if (!(query.select instanceof Array)) query.select = [query.select]
+    //     if (query.order &&!(query.order instanceof Array)) query.order = [query.order]
+    //     queryString = `?select=${query.select.join(',')}`
+    //     if (query.order) queryString += `&order=${query.order.join(',')}`
+    //     let filter = Object.keys(query)
+    //       .filter( n => n != 'order' && n != 'select' )
+    //       .map( key => encodeURIComponent(key) + '=' + encodeURIComponent(query[key]) )
+    //     if (filter.length > 0) queryString += `&${filter.join('&')}`
+    //   }
+    //   console.log('queryString', queryString)  
+    //   document.body.style.cursor = 'wait'
+    //   const resp = await fetch(`https://${dbId}.supabase.co/rest/v1/${relName}${queryString}`, {
+    //     method: method,
+    //     cache: 'no-cache',
+    //     headers: {
+    //       apikey: anonKey,
+    //       Authorization: `Bearer ${localStorage.access_token || anonKey}`,
+    //       'Content-Type': 'application/json',
+    //       Prefer: 'return=representation'
+    //     },
+    //     body: data ? JSON.stringify(data) : undefined
+    //   })
+
+    //   const json = await resp.json()
+    //   document.body.style.cursor = 'auto'
+    //   if (!resp.ok) {
+    //     alert('Database request failed. (See console for details.)')
+    //     return []
+    //   }
+    //   console.log('query', query, 'returns', json)
+    //   return json
+    // }
+
+    async function request2(relName, query, data) {
+      const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYxNDQ0MjY4OSwiZXhwIjoxOTMwMDE4Njg5fQ.TBULgqU-TgI1gL0iScxM0k4B1xTBnQ_q0XLpdu7qnAs'
+      const dbId = 'cqxvknmoofzuhxbonmoj'
+      const method = query ? (data ? (data == 'DELETE' ? 'DELETE' : 'PATCH') : 'GET') : data ? 'POST' : 'GET'
+      document.body.style.cursor = 'wait'
+      const resp = await fetch(`https://${dbId}.supabase.co/rest/v1/${relName}?${query}`, {
+        method: method,
+        cache: 'no-cache',
+        headers: {
+          apikey: anonKey,
+          Authorization: `Bearer ${localStorage.access_token || anonKey}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation'
+        },
+        body: data ? JSON.stringify(data) : undefined
+      })
+
+      const json = await resp.json()
+      document.body.style.cursor = 'auto'
+      if (!resp.ok) {
+        alert('Database request failed. (See console for details.)')
+        return []
+      }
+      console.log('query', query, 'returns', json)
+      return json
+    }
+
+    function displayQuestion(msg) {
+      if (!msg.data.no) {
+        console.warn('message was not a question number', msg.data)
+        return
+      }  
+      let question = questions[msg.data.no-1].question
+      console.log('displayQuestion', msg.data.no, question)
+      $('#main').innerHTML = question.question_content + '<hr/>' + question.choices
+      $('#pre-game').hidden = true
+      $('#game').hidden = false
+    }
+    async function main() {
+      let params = {}
+      let gameId = null
+      new URLSearchParams(location.hash.slice(1)).forEach( (v, k) => params[k] = `${v}`)
+      console.log('params', params)
+      if (params.code) $('#game_code').value = params.code
+      const code = $('#game_code').value
+      $('#btn-register').onclick = async evt => {
+        console.log('signing in', code, $('#player_handle').value)
+
+        // wait for player handle before instantiating
+        const drone = new Scaledrone('s8VguFUX78IuhUH5', {data: {name: $('#player_handle').value}})
+
+        drone.on('open', evt => console.log('Channel opened.', evt) )
+        drone.on('err', err => alert(`Game channel failed to open: ${JSON.stringify(err)}`) )
+        drone.on('close', evt => console.log('Channel closed.', evt) )
+
+        let room = drone.subscribe(`observable-game-${$('#game_code').value}`)
+        room.on('open', evt => console.log('Room opened.', evt) )
+        room.on('err', err => alert(`Game room failed to open: ${JSON.stringify(err)}`) )
+        room.on('close', evt => console.log('Room closed.', evt) )
+        room.on('members', async m => {
+          gameId = m.filter( r => r.clientData.name.endsWith('** Game Runner **') )[0].clientData.game 
+          console.log('gameId', gameId)
+          const data = await request2('game', `select=game_plan(game_plan_question(sequence,question(title,question_content,followup,choices,correct_choice,hints,category)))&game=eq.${gameId}&game_plan.game_plan_question.order=sequence`)
+          console.log('game data', data)
+          questions = data[0].game_plan.game_plan_question
+          // questions.forEach( r => console.log(r.question.title))
+        })
+        room.on('message', displayQuestion)
+      }
+    }
+
+    delete localStorage.access_token // keep this anonymous
+    main()
+  </script>
+</body>
+</html>

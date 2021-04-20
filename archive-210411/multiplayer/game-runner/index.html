@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
+   <!-- <link rel="shortcut icon" href="/retail/images/favicon.ico"> -->
+  <title>Game Runner - VerifyIt</title>
+  <!-- <link href="../css/style.css" rel="stylesheet" type="text/css"> -->
+  <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
+  <script src="../../js/lib.js"></script>
+  <style>
+    @import "../../css/mini-default.min.css";
+    @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap');
+    @import "../../css/iziToast.min.css";
+
+    * {
+      font-family: Quicksand, arial, sans, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      width: clamp(340px, 90%, 800px);
+      margin: auto;
+    }  
+    ul {
+      list-style-type: none;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <fieldset>
+      <legend>Game setup</legend>
+      <label for="play_code">Game Code</label>
+      <input type="text" id="play_code" type="number" placeholder="A four digit number"/>
+      <button type="button" id="btn-copy">&#128203;</button>
+      <fieldset id="game-setup">
+        <legend>Choose a Game</legend>
+        <ul>
+          <li data-row><label><input type="radio" name="game"/><span>Game</span></label></li>
+        </ul>
+        <button id="btn-open-game">Start the new game</button>
+      </fieldset>
+    </fieldset>
+    <div id="game-start" hidden>
+      <h2>Game is ready. Distribute the game code to players.</h2>
+      <p>By pressing the button beside the game code above, you'll copy the url to the clipboard. Then paste it in a text, chat or email
+      to the players, or you can give them <a id="play-game-url", href="#" target="_blank">this url</a> and the game code and they can enter the game themselves.</p>
+      <fieldset id="question-list"><legend>Questions</legend>
+        <ol></ol>
+      </fieldset>
+      <fieldset id="player-list"><legend>Players</legend>
+        <ul></ul>
+      </fieldset>
+      <p>When everyone has entered, press the button below to issue the first question.</p>
+      <p>From there, players will automatically get the next question when all the players answer the previous question. Or you can force
+      the next question by pressing the button again.</p>
+      <button id="btn-next-question">Next Question</button>
+    </div>
+  </div>
+  <script>
+    // const $ = selector => document.querySelector(selector) 
+
+    // async function request2(relName, query, data) {
+    //   const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYxNDQ0MjY4OSwiZXhwIjoxOTMwMDE4Njg5fQ.TBULgqU-TgI1gL0iScxM0k4B1xTBnQ_q0XLpdu7qnAs'
+    //   const dbId = 'cqxvknmoofzuhxbonmoj'
+    //   const method = query ? (data ? (data == 'DELETE' ? 'DELETE' : 'PATCH') : 'GET') : data ? 'POST' : 'GET'
+    //   document.body.style.cursor = 'wait'
+    //   const resp = await fetch(`https://${dbId}.supabase.co/rest/v1/${relName}?${query}`, {
+    //     method: method,
+    //     cache: 'no-cache',
+    //     headers: {
+    //       apikey: anonKey,
+    //       Authorization: `Bearer ${localStorage.access_token || anonKey}`,
+    //       'Content-Type': 'application/json',
+    //       Prefer: 'return=representation'
+    //     },
+    //     body: data ? JSON.stringify(data) : undefined
+    //   })
+
+    //   const json = await resp.json()
+    //   document.body.style.cursor = 'auto'
+    //   if (!resp.ok) {
+    //     alert('Database request failed. (See console for details.)')
+    //     return []
+    //   }
+    //   console.log('query', query, 'returns', json)
+    //   return json
+    // }
+    async function fetchQuestions(game) {
+      let gc = await request(`game_category?select=categories,no_questions&game=eq.${game}`)
+      console.log('gc', gc)
+      let result = await Promise.all(gc.map( async cat => {
+        const buf = await request( `random_question?select=title&game=eq.${game}&categories=eq.${cat.categories}&limit=${cat.no_questions}`)
+        return buf.map( r => ({title: r.title, categories: cat.categories}) )
+      }))
+      return result.flat().sort(() => Math.random() - 0.5).map( (r,i) => ({title: r.title, categories: r.categories, sequence: i}) )
+    }
+
+    var curQuestionNo = 0
+
+    async function main() {
+      var players = []
+      var questions = []
+      var drone
+      let codeElem = $('#play_code')
+      codeElem.value = Math.floor(Math.random()*9999)
+      $('#btn-copy').onclick = evt => {
+        navigator.clipboard.writeText(`${location.href.replace('game-runner/', '')}#code=${codeElem.value}`)
+      }
+      
+      $('#play-game-url').href = location.href.replace('game-runner', '')
+      let games = await request('game?name=neq.(none)&name=not.ilike.test*')
+      console.log('games', games)
+
+      let childTmpl = $('li[data-row]')
+      games.forEach( row => {
+        let newItem = childTmpl.cloneNode(true)
+        newItem.querySelector('input[type=radio]').value = row.name
+        newItem.querySelector('label span').textContent = row.name
+        childTmpl.parentElement.appendChild(newItem)
+      })
+      childTmpl.remove()
+   
+      $('#btn-open-game').onclick = async evt => {
+        evt.preventDefault()
+        const checked = $('input[name=game]:checked')
+        if (checked == null) {
+          alert('Please select a Game Plan first.')
+          return
+        }
+        const game = checked.value
+        const play_code = codeElem.value
+        // let data = await request('play', null, {game: checked.value, play_code: codeElem.value})
+        // const playId = data[0].play
+        const playId = (await request('play', {game, play_code}))[0].play
+        console.log('ready to open game', game, playId)
+        const questions = await fetchQuestions(game)
+        console.log(questions)
+        await request('question_play', questions.map( r => ({question: r.title, play: playId, categories: r.categories, sequence: r.sequence}) ))
+
+        drone = new Scaledrone('s8VguFUX78IuhUH5', {data: {name: '** Game Runner **', play: playId}})
+        drone.on('open', evt => console.log('Channel opened.', evt) )
+        drone.on('err', err => alert(`Game channel failed to open: ${JSON.stringify(err)}`) )
+        drone.on('close', evt => console.log('Channel closed.', evt) )
+
+        const room = drone.subscribe(`observable-game-${codeElem.value}`)
+        // room.on('open', err => err && alert(`Game room failed to open: ${JSON.stringify(err)}`) )
+        room.on('open', evt => console.log('Room opened.', evt) )
+        room.on('err', err => alert(`Game room failed to open: ${JSON.stringify(err)}`) )
+        room.on('close', evt => console.log('Room closed.', evt) )
+        // room.on('members', m => players = m )
+        room.on('member_join', m => {
+          players.push(m)
+          $('#player-list ul').innerHTML = players.map( p => `<li>${p.clientData.name}</li>` ).join('\n') 
+        })
+        room.on('member_leave', ({id}) => {
+          const index = players.findIndex(m => m.id === id)
+          players.splice(index, 1)
+        })
+
+        $('#question-list ol').innerHTML = questions.map( (r, i) => `<li id="question-${i}">${r.title}</li>` ).join('\n') 
+
+        $('#game-setup').hidden = true
+        $('#game-start').hidden = false
+      }
+      $('#btn-next-question').onclick = evt => {
+        evt.preventDefault()
+        curQuestionNo = 0 //@@@ for testing
+        curQuestionNo++
+        drone.publish({room: `observable-game-${codeElem.value}`, message: {no: curQuestionNo}})
+        console.log('message sent.', curQuestionNo)
+        $(`#question-${curQuestionNo}`).style.fontWeight = 'bold'
+      }
+    }
+
+    main()
+
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
+   <!-- <link rel="shortcut icon" href="/retail/images/favicon.ico"> -->
+  <title>Mika Demo VerifyIt</title>
+  <link href="../css/style.css" rel="stylesheet" type="text/css">
+  <!-- <script src='https://cdn.scaledrone.com/scaledrone.min.js'></script> -->
+
+  <style>
+    body {
+      width: clamp(340px, 90%, 800px);
+      margin: auto;
+    }  
+    ul {
+      list-style-type: none;
+    }
+    .choice {width:50vw}
+    .wrong-choice {text-decoration: line-through}
+    #main {
+      width: 61vw;
+      margin: auto;
+    }
+    .card {
+      max-height: 80vh !important;
+      max-width: 75vh !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="pre-game">
+    <h1>Multiplayer Game</h1>
+    <p>The game runner will give you the Game Code to sign into their came.</p>
+    <fieldset>
+      <legend>Select a game</legend>
+      <label for="game_code">Game Code</label>
+      <input type="text" id="game_code" type="number" placeholder="A four digit number"/>
+      <br/>
+      <label for="game_code">Your Handle</label>
+      <input type="text" id="player_handle" type="number"/>
+      <button id="btn-register">Sign into game</button>
+    </fieldset>
+  </div>
+  <div id="game" hidden>
+    <header class="sticky container">
+      <div class="row">
+        <div class="col-sm-3">
+          <span>Question Score: </span><span id="header-question-score">0</span>
+
+        </div>
+        <div class="col-sm-6" style="text-align:center">
+          <span style="font-size:150%; font-weight: bold;">VerifyIt Multiplayer</span>
+        </div>
+        <div class="col-sm-3" style="text-align:right">
+          <span>Total Game Score: </span><span id="header-game-score">0</span>
+
+        </div>
+      </div>
+    </header>
+    <div id="main"></div>
+
+    <input type="checkbox" id="followup-control" class="modal">
+    <div>
+      <div class="card">
+        <label for="followup-control" class="modal-close" ></label>
+        <h3 class="section">Correct!</h3>
+        <p id="followup" class="section"></p>
+        <button id="btn-next">Next Question</button>
+      </div>
+    </div>
+
+    <input type="checkbox" id="hint-control" class="modal">
+    <div>
+      <div class="card">
+        <label for="hint-control" class="modal-close" ></label>
+        <h3 class="section">Hint:</h3>
+        <p id="hint" class="section"></p>
+      </div>
+    </div>
+
+    <div id="game-over" class="card" style="visibility: hidden;">
+      <h3>Game Over!</h3>
+      <p>
+        Your final score is <span id="game-score"></span>
+      </p>
+    </div>
+
+    <div id="flash-category" class="card" style="visibility:hidden; text-align:center; color:white;background-color:dodgerblue">
+      <h1>(category)</h1>
+    </div>
+  </div>
+
+<script>
+    const $ = selector => document.querySelector(selector) 
+    var questions = []
+    var questionIdx = 0
+    var questionScore = 0
+    var gameScore = 0
+
+
+    async function request(relName, query, data) {
+      const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYxNDQ0MjY4OSwiZXhwIjoxOTMwMDE4Njg5fQ.TBULgqU-TgI1gL0iScxM0k4B1xTBnQ_q0XLpdu7qnAs'
+      const dbId = 'cqxvknmoofzuhxbonmoj'
+      const method = query ? (data ? (data == 'DELETE' ? 'DELETE' : 'PATCH') : 'GET') : data ? 'POST' : 'GET'
+      document.body.style.cursor = 'wait'
+      const resp = await fetch(`https://${dbId}.supabase.co/rest/v1/${relName}?${query}`, {
+        method: method,
+        cache: 'no-cache',
+        headers: {
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`, //@@@ temporary for demo - need to consider a test to see if it should ignore access_token
+          // Authorization: `Bearer ${localStorage.access_token || anonKey}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation'
+        },
+        body: data ? JSON.stringify(data) : undefined
+      })
+
+      const json = await resp.json()
+      document.body.style.cursor = 'auto'
+      if (!resp.ok) {
+        alert('Database request failed. (See console for details.)')
+        return []
+      }
+      // console.log('query', query, 'returns', json)
+      return json
+    }
+    const delay = t => new Promise(resolve => setTimeout(resolve, t))
+
+    async function displayQuestion() {
+      async function flashCategory(t) {
+        $('#main').hidden = true
+        const el = $('#flash-category h1')
+        el.textContent = question.categories
+        el.parentElement.style.visibility = 'visible'
+        // debugger
+        await delay(t)
+        el.parentElement.style.visibility = 'hidden'
+        $('#main').hidden = false
+      }
+
+      function respond(evt) {
+        evt.preventDefault()
+        let choiceNo = evt.target.dataset.no || evt.target.closest('button').dataset.no
+        // console.log('respond', choiceNo, question.correct_choice)
+        if (choiceNo == question.correct_choice) {
+          document.getElementById('followup-control').checked = true
+          gameScore = gameScore + questionScore
+          $('#header-game-score').textContent = gameScore
+          return
+        }
+        evt.target.classList.add('wrong-choice')
+        questionScore = Math.floor(questionScore / 2)
+        $('#header-question-score').textContent = questionScore
+
+      }
+
+      function prepNotations(elem) {
+        // console.log('prepNotations', elem, Array.from(elem.querySelectorAll('em')))
+        Array.from(elem.querySelectorAll('strong > em, em > strong')).forEach( n => {
+          let targetNode = n.parentElement.nextSibling
+          // console.log('prepNotations', n, 'targetNote', targetNote)
+          if (!targetNode) console.warn('could not find target note for', n)
+          let targetRef = targetNode.textContent.match(/^\s*\[(.+)\]/)[1]
+          // console.log('targetNode', targetNode, 'targetRef', targetRef)
+          // let m = n.parentElement.parentElement.nextElementSibling.textContent.match(/^\s*\[(.+)\]/)[1]
+          targetNode.textContent = targetNode.textContent.replace(/^\s*\[(.+)\]/, '')
+          let a = document.createElement('a')
+          a.innerHTML = n.innerHTML
+          a.href = `#${targetRef}`
+          // a.style.color = 'blue'
+          n.parentNode.replaceChild(a, n)
+          a.onclick = hint
+          // console.log('new a', a.onclick)
+        })
+      }
+
+      function hint(evt) {
+        evt.preventDefault()
+        let href = evt.target.href || evt.target.closest('a').href
+        let hintNo = Number(href.split('#')[1]).toString()
+        // console.log('hint', href, hintNo, location.pathname)
+        // if (!href.includes(location.pathname) && !href.includes('docs.google.com')) { //must be external link
+        if (isNaN(hintNo)) {
+          let hintElem = document.getElementById('hint')
+          hintElem.innerHTML = `This will be a source description from the database.<br/> It may include <a href="http://rixfix.com" target="_blank">links</a>.`
+          prepNotations(hintElem)
+          document.getElementById('hint-control').checked = true
+        }
+        else {
+          // console.log('showing hint', hintNo, question.hints[hintNo-1])
+          let hintElem = document.getElementById('hint')
+          hintElem.innerHTML = hints[hintNo-1]
+          prepNotations(hintElem)
+          document.getElementById('hint-control').checked = true
+        }
+        return false
+      }
+
+      $('#followup-control').checked = false
+
+      if (questionIdx >= questions.length) {
+        $('header').hidden = true
+        $('#game-score').textContent = gameScore
+        $('#game-over').style.visibility = 'visible'
+        $('#main').hidden = true
+        return
+      }
+      // let question = questions[questionIdx].question
+      // question.categories = questions[questionIdx].categories
+      const question = questions[questionIdx]
+      questionIdx++
+      const choiceNames = question.choices.trim().split(/<ol>\s*<li>\s*|\s*<\/li>\s*<li>\s*|\s*<\/li>\s*<\/ol>/).slice(1,-1)
+      const choices = choiceNames.map( (n, i) => `\n<button data-no="${i+1}" class="choice">${n}</button>` ).join('\n')
+      const hints = question.hints.trim().split(/<ol>\s*<li>\s*|\s*<\/li>\s*<li>\s*|\s*<\/li>\s*<\/ol>/).slice(1,-1)
+
+      console.log('displayQuestion', question)
+      await flashCategory(2000)
+      $('#main').innerHTML = question.question_content + '<hr/>' + choices
+
+      document.querySelectorAll('.choice').forEach( btn => btn.onclick = respond)
+      $('#followup').innerHTML = question.followup
+      prepNotations($('#main'))
+      prepNotations($('#followup'))
+      questionScore = 100
+      $('#header-question-score').textContent = questionScore
+      $('#btn-next').onclick = displayQuestion
+    }
+
+    async function fetchQuestions(game) {
+      let catBuf = await request('game_category', `select=categories,no_questions&game=eq.${game}`)
+      console.log('catBuf', catBuf)
+      let result = await Promise.all(catBuf.map( async cat => {
+        return await request( 'random_question', `select=*&categories=eq.${cat.categories}&limit=${cat.no_questions}`)
+      }))
+      return result.flat().sort(() => Math.random() - 0.5)
+    }
+
+    async function main() {
+      let params = {}
+      new URLSearchParams(location.hash.slice(1)).forEach( (v, k) => params[k] = `${v}`)
+      console.log('params', params)
+      let game = params.game || 'Test 1'
+      // const data = await request('game_plan_question', `select=sequence,question(title,question_content,followup,choices,correct_choice,hints,category)&game_plan=eq.${gamePlan}&order=sequence`)
+      // questions = data.map( r => r.question)
+      questions = await fetchQuestions(game)
+      console.log('questions', questions)
+      $('#btn-register').onclick = async evt => {
+        $('#pre-game').hidden = true
+        $('#game').hidden = false
+        const el = $('#flash-category h1')
+        el.textContent = 'Waiting for other players to join...'
+        el.parentElement.style.visibility = 'visible'
+        // debugger
+        await delay(3000)
+        el.parentElement.style.visibility = 'hidden'
+        $('#main').hidden = false
+        
+        displayQuestion()
+      }
+    }
+
+    // delete localStorage.access_token // keep this anonymous
+    main()
+  </script>
+</body>
+</html>

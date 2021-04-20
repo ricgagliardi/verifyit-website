@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
+   <!-- <link rel="shortcut icon" href="/retail/images/favicon.ico"> -->
+  <title>Multiplayer VerifyIt</title>
+  <!-- <link href="../css/style.css" rel="stylesheet" type="text/css"> -->
+  <script src='https://cdn.scaledrone.com/scaledrone.min.js'></script>
+  <script src='../js/lib.js'></script>
+
+  <style>
+    @import "../css/mini-default.min.css";
+    @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap');
+    @import "../css/iziToast.min.css";
+    @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
+    /* :root {
+      --header-fore-color: white;
+      --header-back-color: #4F69C1;
+      --header-border-color: #4F69C1;
+      --a-link-color: white;
+      --a-visited-color: white;
+      --fore-color: white;
+      --back-color:#384F9E
+    } */
+    * {
+      font-family: Quicksand, arial, sans, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: clamp(340px, 90%, 800px);
+      margin: auto;
+    }  
+    ul {
+      list-style-type: none;
+    }
+    .choice {width:50vw}
+    .wrong-choice {text-decoration: line-through}
+    #main {
+      width: 61vw;
+      margin: auto;
+    }
+    .card {
+      max-height: 80vh !important;
+      max-width: 75vh !important;
+    }
+    .tip {
+      position: relative;
+      display: inline-block;
+      /* border-bottom: 1px dotted black; If you want dots under the hoverable text */
+    }
+
+    /* Tooltip text */
+    .tip .tip-text {
+      visibility: hidden;
+      width: 25vw;
+      background-color: #5C5BEE;
+      color: #fff;
+      text-align: center;
+      padding: 5px 0;
+      border-radius: 6px;
+      top: 150%;
+      left: 50%;
+      margin-left: -12vw;
+      position: absolute;
+      z-index: 1;
+    }
+    .tip .tip-text::after {
+      content: " ";
+      position: absolute;
+      bottom: 100%;  /* At the top of the tooltip */
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: transparent transparent #5C5BEE transparent;
+    }
+    .tip:hover .tip-text {
+      visibility: visible;
+    }
+
+  </style>
+</head>
+<body>
+  <div id="pre-game">
+    <h1>Multiplayer Game</h1>
+    <p>The game runner will give you the Game Code to sign into their came.</p>
+    <fieldset>
+      <legend>Select a game</legend>
+      <label for="play_code">Game Code</label>
+      <input type="text" id="play_code" type="number" placeholder="A four digit number"/>
+      <!-- <span class="icon-help tip">
+        <span class="tip-text">
+          If you're joining a game, the Game Runner will give you this number.<br>
+          If you're running a game, you'll get a number here to share with your players.
+        </span>
+      </span> -->
+      <br/>
+      <label for="play_code">Your Handle</label>
+      <input type="text" id="player_handle" type="number"/>
+      <button id="btn-register">Sign into game</button>
+    </fieldset>
+  </div>
+  <div id="game" hidden>
+    <header class="sticky container">
+      <div class="row">
+        <div class="col-sm-3">
+          <span>Question Score: </span><span id="header-question-score">0</span>
+
+        </div>
+        <div class="col-sm-6" style="text-align:center">
+          <span style="font-size:150%; font-weight: bold;">VerifyIt Multiplayer</span>
+        </div>
+        <div class="col-sm-3" style="text-align:right">
+          <span>Total Game Score: </span><span id="header-game-score">0</span>
+
+        </div>
+      </div>
+    </header>
+    <div id="main"></div>
+
+    <input type="checkbox" id="followup-control" class="modal">
+    <div>
+      <div class="card">
+        <label for="followup-control" class="modal-close" ></label>
+        <h3 class="section">Correct!</h3>
+        <p id="followup" class="section"></p>
+        <button id="btn-next">Next Question</button>
+      </div>
+    </div>
+
+    <input type="checkbox" id="hint-control" class="modal">
+    <div>
+      <div class="card">
+        <label for="hint-control" class="modal-close" ></label>
+        <h3 class="section">Hint:</h3>
+        <p id="hint" class="section"></p>
+      </div>
+    </div>
+
+    <div id="game-over" class="card" style="display:none">
+      <h3>Game Over!</h3>
+      <p>
+        Your final score is <span id="game-score"></span>
+      </p>
+    </div>
+
+    <!-- <div id="flash-category" class="card" style="margin:auto; text-align:center; color:white;background-color:#2D9CDB"> -->
+    <div id="flash-category" style="margin:auto; text-align:center;">
+      <h1 hidden>(category)</h1>
+      <img src="" alt="" hidden style="max-width:75%; margin:auto;">
+    </div>
+  </div>
+
+<script>
+    var questions = []
+    var questionIdx = 0
+    var questionScore = 0
+    var gameScore = 0
+
+    const animateCSS = (element, animation, prefix = 'animate__') =>
+      // We create a Promise and return it
+      new Promise((resolve, reject) => {
+        const animationName = `${prefix}${animation}`;
+        const node = document.querySelector(element);
+
+        node.classList.add(`${prefix}animated`, animationName);
+
+        // When the animation ends, we clean the classes and resolve the Promise
+        function handleAnimationEnd(event) {
+          event.stopPropagation();
+          node.classList.remove(`${prefix}animated`, animationName);
+          resolve('Animation ended');
+        }
+
+        node.addEventListener('animationend', handleAnimationEnd, {once: true});
+      })
+
+     async function displayQuestion() {
+      async function flashCategory(t) {
+        $('#main').hidden = true
+        if (question.include_text_with_flash) {
+          $('#flash-category h1').textContent = question.categories
+          $('#flash-category h1').hidden = false
+        }
+        if (question.flash_image) {
+          $('#flash-category img').src = question.flash_image
+          $('#flash-category img').hidden = false
+        }
+        $('#flash-category').style.visibility = 'visible'
+        await animateCSS('#flash-category', 'fadeInLeft')
+        await delay(t)
+        await animateCSS('#flash-category', 'fadeOutRight')
+        $('#flash-category').style.visibility = 'hidden'
+        // $('#main').hidden = false
+      }
+
+      function respond(evt) {
+        evt.preventDefault()
+        let choiceNo = evt.target.dataset.no || evt.target.closest('button').dataset.no
+        // console.log('respond', choiceNo, question.correct_choice)
+        if (choiceNo == question.correct_choice) {
+          document.getElementById('followup-control').checked = true
+          gameScore = gameScore + questionScore
+          $('#header-game-score').textContent = gameScore
+          return
+        }
+        evt.target.classList.add('wrong-choice')
+        questionScore = Math.floor(questionScore / 2)
+        $('#header-question-score').textContent = questionScore
+
+      }
+
+      function prepNotations(elem) {
+        // console.log('prepNotations', elem, Array.from(elem.querySelectorAll('em')))
+        Array.from(elem.querySelectorAll('strong > em, em > strong')).forEach( n => {
+          let targetNode = n.parentElement.nextSibling
+          // console.log('prepNotations', n, 'targetNote', targetNote)
+          if (!targetNode) console.warn('could not find target note for', n)
+          let targetRef = targetNode.textContent.match(/^\s*\[(.+)\]/)[1]
+          // console.log('targetNode', targetNode, 'targetRef', targetRef)
+          // let m = n.parentElement.parentElement.nextElementSibling.textContent.match(/^\s*\[(.+)\]/)[1]
+          targetNode.textContent = targetNode.textContent.replace(/^\s*\[(.+)\]/, '')
+          let a = document.createElement('a')
+          a.innerHTML = n.innerHTML
+          a.href = `#${targetRef}`
+          // a.style.color = 'blue'
+          n.parentNode.replaceChild(a, n)
+          a.onclick = hint
+          // console.log('new a', a.onclick)
+        })
+      }
+
+      function hint(evt) {
+        evt.preventDefault()
+        let href = evt.target.href || evt.target.closest('a').href
+        let hintNo = Number(href.split('#')[1]).toString()
+        // console.log('hint', href, hintNo, location.pathname)
+        // if (!href.includes(location.pathname) && !href.includes('docs.google.com')) { //must be external link
+        if (isNaN(hintNo)) {
+          let hintElem = document.getElementById('hint')
+          hintElem.innerHTML = `This will be a source description from the database.<br/> It may include <a href="http://rixfix.com" target="_blank">links</a>.`
+          prepNotations(hintElem)
+          document.getElementById('hint-control').checked = true
+        }
+        else {
+          // console.log('showing hint', hintNo, question.hints[hintNo-1])
+          let hintElem = document.getElementById('hint')
+          hintElem.innerHTML = hints[hintNo-1]
+          prepNotations(hintElem)
+          document.getElementById('hint-control').checked = true
+        }
+        return false
+      }
+
+      $('#followup-control').checked = false
+
+      if (questionIdx >= questions.length) {
+        $('header').hidden = true
+        $('#game-score').textContent = gameScore
+        $('#game-over').style.visibility = 'visible'
+        $('#main').hidden = true
+        return
+      }
+      // let question = questions[questionIdx].question
+      // question.categories = questions[questionIdx].categories
+      const question = questions[questionIdx]
+      questionIdx++
+      const choiceNames = question.choices.trim().split(/<ol>\s*<li>\s*|\s*<\/li>\s*<li>\s*|\s*<\/li>\s*<\/ol>/).slice(1,-1)
+      const choices = choiceNames.map( (n, i) => `\n<button data-no="${i+1}" class="choice">${n}</button>` ).join('\n')
+      const hints = question.hints.trim().split(/<ol>\s*<li>\s*|\s*<\/li>\s*<li>\s*|\s*<\/li>\s*<\/ol>/).slice(1,-1)
+
+      console.log('displayQuestion', question)
+      await flashCategory(1000)
+      $('#main').innerHTML = question.question_content + '<hr/>' + choices
+      $('#main').hidden = false
+      animateCSS('#main', 'fadeIn')
+
+      document.querySelectorAll('.choice').forEach( btn => btn.onclick = respond)
+      $('#followup').innerHTML = question.followup
+      prepNotations($('#main'))
+      prepNotations($('#followup'))
+      questionScore = 100
+      $('#header-question-score').textContent = questionScore
+      $('#btn-next').onclick = displayQuestion
+    }
+
+    // async function fetchQuestions(play) {
+    //   const qp = (await request(`question_play?select=question,categories,sequence&play=eq.${play}`))
+    //   console.log(play, 'qp', qp)
+    //   const titles = qp.map( r => r.question )
+    //   const qs = await request(`question?select=title,question_content,followup,choices,correct_choice,hints&title=in.(${titles.join(',')})`)
+    //   console.log('qs', qs)
+    //   const images = await request(`game_category?select=flash_image,background_image,include_text_with_flash`)
+    //   console.log('images', images)
+    //   return null
+    // }
+
+    async function main() {
+      let params = {}
+      new URLSearchParams(location.hash.slice(1)).forEach( (v, k) => params[k] = `${v}`)
+      console.log('params', params)
+
+
+      if (params.code) $('#play_code').value = params.code
+      const code = $('#play_code').value
+      // questions = await fetchQuestions(code)
+      // console.log('questions', questions)
+      $('#btn-register').onclick = async evt => {
+        $('#pre-game').hidden = true
+        $('#game').hidden = false
+        const el = $('#flash-category h1')
+        // el.textContent = 'Waiting for other players to join...'
+        // el.parentElement.style.visibility = 'visible'
+        // // debugger
+        // await delay(3000)
+        // el.parentElement.style.visibility = 'hidden'
+        // $('#main').hidden = false
+        
+        // displayQuestion()
+
+        console.log('signing in', code, $('#player_handle').value)
+
+        // wait for player handle before instantiating
+        const drone = new Scaledrone('s8VguFUX78IuhUH5', {data: {name: $('#player_handle').value}})
+
+        drone.on('open', evt => console.log('Channel opened.', evt || '') )
+        drone.on('err', err => alert(`Game channel failed to open: ${JSON.stringify(err)}`) )
+        drone.on('close', evt => console.log('Channel closed.', evt || '') )
+
+        let room = drone.subscribe(`observable-game-${$('#play_code').value}`)
+        room.on('open', evt => console.log('Room opened.', evt || '') )
+        room.on('err', err => alert(`Game room failed to open: ${JSON.stringify(err)}`) )
+        room.on('close', evt => console.log('Room closed.', evt || '') )
+        room.on('members', async m => {
+          // console.log('m', m)
+          playId = m.filter( r => r.clientData.name.endsWith('** Game Runner **') )[0].clientData.play
+          // console.log('playId', playId)
+          // questions = await fetchQuestions(playId)
+          questions = await request(`play_detail?play=eq.${playId}`)
+          displayQuestion()
+        })
+
+      }
+    }
+
+    // delete localStorage.access_token // keep this anonymous
+    main()
+  </script>
+</body>
+</html>

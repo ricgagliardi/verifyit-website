@@ -1,0 +1,212 @@
+/* @import "mini-default.min.css"; */
+
+h1 {
+  color: white;
+  background-color: black;
+  width: 100%
+}
+/* @import url("https://fonts.googleapis.com/css?family=Google+Sans");
+@import url("https://fonts.googleapis.com/css?family=Roboto");
+
+body {
+  font-family: Roboto, arial, sans, sans-serif;
+  margin: 0;
+}
+
+iframe {
+  border: 0;
+  frameborder: 0;
+  height: 100%;
+  width: 100%;
+}
+
+#header {
+  align-items: center;
+  background: white;
+  border-bottom: 1px #ccc solid;
+  display: flex;
+  height: 60px;
+  justify-content: space-between;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 100;
+}
+
+#header #title {
+  font-family: 'Google Sans';
+  font-size: large;
+  margin: auto 0 auto 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 70%;
+}
+
+#header #interval {
+  margin: auto 25px auto 0;
+  font-family: Roboto;
+  font-size: small;;
+}
+
+#footer {
+  background: #f0f0f0;
+  border-bottom: 1px #ccc solid;
+  bottom: 0;
+  font-family: Roboto;
+  font-size: small;
+  padding: 10px 10px;
+  position: fixed;
+  text-align: center;
+  width: 100%;
+}
+
+#contents {
+  padding: 100px 20% 50px 20%;
+}
+
+@media only screen and (max-device-width: 800px) {
+  #header {
+    border-bottom-width: 5px;
+    height: auto;
+    display: block;
+  }
+
+  #header #title {
+    font-size: 3em;
+    margin: auto 0 auto 20px;
+    width: 90%;
+  }
+
+  #header #interval {
+    font-size: 1.5em;
+    margin: 10px 0 auto 25px;
+  }
+
+  #contents {
+    padding: 150px 5% 80px;
+  }
+
+  #footer {
+    font-size: 2em;
+  }
+}
+
+.dash {
+  padding: 0 6px;
+} */
+
+
+/****************************************/
+
+
+/*@import "iziToast.min.css";*/
+/*@import url('https://fonts.googleapis.com/css?family=Macondo+Swash+Caps&display=swap');*/
+
+/*
+@media print {
+  .hide-on-print {
+    visibility: hidden;
+    height: 0px;
+  }
+}
+
+@media screen {
+  .show-on-print {
+    visibility: hidden;
+    height: 0px;
+  }
+}
+html,
+body {
+    height: 100%;
+    background-color: #005095;
+    color: white;
+    font-size: 1rem;
+    scroll-behavior: smooth;
+  }
+
+html,
+body,
+input,
+textarea,
+buttons {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.004);
+}
+
+nav {
+  background-color: rgb(51,51,51); 
+  color: white;
+  position: absolute;
+}
+
+
+form.card {
+  padding: 4em 1em;
+  margin: auto;
+  width: clamp(340px, 90%, 800px);
+}
+
+
+fieldset {
+  margin-bottom: 8px;
+  padding: 5px;
+}
+legend {
+  font-weight: bold;
+}
+
+input, textarea {
+  margin-top: 3px;
+}
+
+button[type=submit] {
+  float:right;
+  margin-right: 10px;
+}
+
+input:invalid {
+  box-shadow: 0 0 5px 1px red;
+}
+
+.table {
+  display:table;
+}
+.th {
+  display:table-cell; 
+  font-weight: bold;
+  padding-right: 0.5em;
+}
+.td {
+  display:table-cell;
+  padding-right: 0.5em;
+}
+.tr {
+  display:table-row;
+}
+.tr:hover {
+  background-color:#ccc;
+}
+
+
+.loader {
+  border: 4px solid #f3f3f3; 
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 2s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.lwv-red {
+  color: #cd2039
+}
+*/

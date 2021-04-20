@@ -1,0 +1,23 @@
+body {
+  margin: 0;
+  /* width: 400px; */
+  padding: 2rem;
+}
+
+h1 {
+  background-color: lightgray;
+  width: 100%;
+  font-size: 150%;
+}
+
+p {
+  margin: 1rem;
+}
+/* @import url("https://fonts.googleapis.com/css?family=Google+Sans");
+@import url("https://fonts.googleapis.com/css?family=Roboto");
+
+body {
+  font-family: Roboto, arial, sans, sans-serif;
+  margin: 0;
+}
+*/

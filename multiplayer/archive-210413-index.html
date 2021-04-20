@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
+   <!-- <link rel="shortcut icon" href="/retail/images/favicon.ico"> -->
+  <title>Multiplayer VerifyIt</title>
+  <!-- <link href="../css/style.css" rel="stylesheet" type="text/css"> -->
+  <script src='https://cdn.scaledrone.com/scaledrone.min.js'></script>
+  <script src='../js/lib.js'></script>
+
+  <style>
+    @import "../css/mini-default.min.css";
+    @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap');
+    @import "../css/iziToast.min.css";
+    @import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
+    :root {
+      --button-hover-back-color: f8f8f8;
+      --button-hover-border-color:5352ED;
+    }
+    * {
+      font-family: Quicksand, arial, sans, sans-serif;
+      margin: 0;
+      padding: 0;
+      font-size: max(1.2rem, 2vw);
+    }
+
+    body {
+      width: clamp(340px, 90%, 800px);
+      margin: auto;
+    }  
+    ul {
+      list-style-type: none;
+    }
+    .choice {
+      width:50vw;
+      background: #f8f8f8;;
+      border-color: #BABABA;
+      border-radius: 8px;
+      border-width: 2px;
+      color: #404144;
+      font-weight: 600;
+    }
+    .choice:hover {
+      /* background: #f8f8f8;; */
+      border-color: #5352ED;
+    }
+    .choice.selected {
+      color: #8180E4;
+      background-color: #E6E6FD;
+      --animate-duration: .25s;
+    }
+    .choice.wrong-choice {
+      background-color: #FF0037;
+      color: white;
+    }
+    .choice.right-choice {
+      background-color: #27AE60;
+      color: white;
+    }
+    #main {
+      width: 61vw;
+      margin: auto;
+      text-align: center;
+    }
+    .card {
+      max-height: 80vh !important;
+      max-width: 75vh !important;
+    }
+    .tip {
+      position: relative;
+      display: inline-block;
+      /* border-bottom: 1px dotted black; If you want dots under the hoverable text */
+    }
+
+    /* Tooltip text */
+    .tip .tip-text {
+      /* visibility: hidden; */
+      width: 25vw;
+      background-color: #5C5BEE;
+      color: #fff;
+      text-align: center;
+      padding: 5px 0;
+      border-radius: 6px;
+      top: 150%;
+      left: 50%;
+      margin-left: -12vw;
+      position: absolute;
+      z-index: 1;
+    }
+    .tip .tip-text::after {
+      content: " ";
+      position: absolute;
+      bottom: 100%;  /* At the top of the tooltip */
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: transparent transparent #5C5BEE transparent;
+    }
+    /* .tip:hover .tip-text {
+      visibility: visible;
+    } */
+
+  </style>
+</head>
+<body>
+  <div id="pre-game">
+    <h1>Multiplayer Game</h1>
+    <p>The game runner will give you the Game Code to sign into their came.</p>
+    <fieldset>
+      <legend>Select a game</legend>
+      <label for="play_code">Game Code</label>
+      <input type="text" id="play_code" type="number" placeholder="A four digit number"/>
+      <br/>
+      <label for="play_code">Your Handle</label>
+      <input type="text" id="player_handle" type="number"/>
+      <button id="btn-register">Sign into game</button>
+    </fieldset>
+  </div>
+  <div id="game" hidden>
+    <header class="sticky container">
+      <div class="row">
+        <div class="col-sm-1" style="padding-top: 1vh; font-size:small; color:grey;">
+          <span id="header-question-score">0</span>
+
+        </div>
+        <div class="col-sm-9 col-md-10" style="text-align:center;">
+          <progress value="0" max="1000" style="border:solid #cccccc 2px; border-radius:10px; height:2vh; --progress-fore-color:#27AE60;"></progress>
+        </div>
+        <div class="col-sm-2 col-md-1" style="text-align:right; padding-top:.3vh">
+          <span>&#11088; </span><span id="header-game-score">0</span>
+
+        </div>
+      </div>
+    </header>
+    <div id="envelope" class="container">
+      <div class="row">
+        <div class="image col-sm-1" style="max-height:7.5vh;">
+          <img style="height:100%">
+        </div>
+        <div class="categories col-sm-11" style="text-align: center;">
+          <span style="font-weight:bold; font-size:max(2rem,3vw);"></span>
+        </div>
+      </div>
+      <div class="row">
+        <div class="color-bar col-sm-1">
+        </div>
+        <div id="main" class="col-sm-11" hidden></div>
+      </div>
+    </div>
+    <!-- <div id="main"></div> -->
+
+    <!-- <input type="checkbox" id="followup-control" class="modal">
+    <div>
+      <div class="card">
+        <label for="followup-control" class="modal-close" ></label>
+        <h3 class="section">Correct!</h3>
+        <p id="followup" class="section"></p>
+        <button id="btn-next">Next Question</button>
+      </div>
+    </div> -->
+
+    <input type="checkbox" id="hint-control" class="modal">
+    <div>
+      <div class="card">
+        <label for="hint-control" class="modal-close" ></label>
+        <h3 class="section">Hint:</h3>
+        <p id="hint" class="section"></p>
+      </div>
+    </div>
+
+    <div id="game-over" class="card" style="display:none">
+      <h3>Game Over!</h3>
+      <p>
+        Your final score is <span id="game-score"></span>
+      </p>
+    </div>
+
+    <!-- <div id="flash-category" class="card" style="margin:auto; text-align:center; color:white;background-color:#2D9CDB"> -->
+    <div id="flash-category" style="margin:auto; text-align:center;">
+      <h1 hidden>(category)</h1>
+      <img src="" alt="" hidden style="max-width:75%; margin:auto;">
+    </div>
+  </div>
+
+<script>
+    var questions = []
+    var questionIdx = 0
+    var questionScore = 0
+    var gameScore = 0
+
+    const animateCSS = (element, animation, prefix = 'animate__') =>
+      // We create a Promise and return it
+      new Promise((resolve, reject) => {
+        const animationName = `${prefix}${animation}`;
+        // const node = document.querySelector(element);
+        const node = element instanceof HTMLElement ? element : document.querySelector(element)
+
+        node.classList.add(`${prefix}animated`, animationName);
+
+        // When the animation ends, we clean the classes and resolve the Promise
+        function handleAnimationEnd(event) {
+          event.stopPropagation();
+          node.classList.remove(`${prefix}animated`, animationName);
+          resolve('Animation ended');
+        }
+
+        node.addEventListener('animationend', handleAnimationEnd, {once: true});
+      })
+
+     async function displayQuestion() {
+      // async function flashCategory(t) {
+      //   $('#main').hidden = true
+      //   if (question.include_text_with_flash) {
+      //     $('#flash-category h1').textContent = question.categories
+      //     $('#flash-category h1').hidden = false
+      //   }
+      //   if (question.flash_image) {
+      //     $('#flash-category img').src = question.flash_image
+      //     $('#flash-category img').hidden = false
+      //   }
+      //   $('#flash-category').style.visibility = 'visible'
+      //   await animateCSS('#flash-category', 'flipInY')
+      //   await delay(t)
+      //   await animateCSS('#flash-category', 'flipOutY')
+      //   $('#flash-category').style.visibility = 'hidden'
+      //   // $('#main').hidden = false
+      // }
+
+      async function respond(evt) {
+        evt.preventDefault()
+        const btn = evt.target
+        let choiceNo = btn.dataset.no || btn.closest('button').dataset.no
+        console.log('respond', choiceNo, btn.dataset.no, question.correct_choice)
+        btn.classList.add('selected')
+        animateCSS(evt.target, 'pulse')
+        await delay(1500)
+        btn.classList.remove('selected')
+        if (choiceNo == question.correct_choice) {
+          console.log('right')
+          btn.classList.add('right-choice')
+          let buf = btn.textContent
+          btn.innerHTML = 'Correct!'
+        
+          // await delay(1200)
+          // btn.textContent = buf
+          // btn.classList.remove('right-choice')
+          gameScore = gameScore + questionScore
+          $('#header-game-score').textContent = gameScore
+          await delay(1200)
+          displayFollowup()
+          // document.getElementById('followup-control').checked = true
+        }
+        else {
+          console.log('wrong')
+          btn.classList.add('wrong-choice')
+          let buf = btn.textContent
+          btn.innerHTML = 'Incorrect'
+          await delay(1200)
+          btn.textContent = buf
+          btn.classList.remove('wrong-choice')
+          btn.disabled = true
+          btn.style.setProperty('text-decoration', 'line-through')
+          // evt.target.classList.add('wrong-choice')
+          questionScore = Math.floor(questionScore / 2)
+          $('#header-question-score').textContent = questionScore
+        }
+
+      }
+
+      async function displayFollowup() {
+        await animateCSS('#main', 'fadeOut')
+        $('#main').hidden = true
+        console.log('displayFollowup')
+        $('#main').innerHTML = question.followup + '<hr><button id="btn-next" class="choice">Next Question</button>'
+        $('#btn-next').onclick = displayQuestion
+        prepNotations($('#main'))
+        $('#main').hidden = false
+        animateCSS('#main', 'fadeIn')
+      }
+
+      function prepNotations(elem) {
+        // console.log('prepNotations', elem, Array.from(elem.querySelectorAll('em')))
+        Array.from(elem.querySelectorAll('strong > em, em > strong')).forEach( n => {
+          let targetNode = n.parentElement.nextSibling
+          // console.log('prepNotat?ions', n, 'targetNote', targetNote)
+          if (!targetNode) {
+            console.warn('could not find target note for', n)
+            return
+          }
+          let targetRef = targetNode.textContent.match(/^\s*\[(.+)\]/) //[1]
+          if (!targetRef) {
+            console.warn('could not find target ref for', targetNode)
+            return
+          }
+
+          // console.log('targetNode', targetNode, 'targetRef', targetRef)
+          // let m = n.parentElement.parentElement.nextElementSibling.textContent.match(/^\s*\[(.+)\]/)[1]
+          targetNode.textContent = targetNode.textContent.replace(/^\s*\[(.+)\]/, '')
+          let a = document.createElement('a')
+          a.innerHTML = n.innerHTML
+          a.href = `#${targetRef[1]}`
+          // a.style.color = 'blue'
+          n.parentNode.replaceChild(a, n)
+          a.onclick = hint
+          // console.log('new a', a.onclick)
+        })
+      }
+
+      function hint(evt) {
+        evt.preventDefault()
+        let href = evt.target.href || evt.target.closest('a').href
+        let hintNo = Number(href.split('#')[1]).toString()
+        // console.log('hint', href, hintNo, location.pathname)
+        // if (!href.includes(location.pathname) && !href.includes('docs.google.com')) { //must be external link
+        if (isNaN(hintNo)) {
+          let hintElem = document.getElementById('hint')
+          hintElem.innerHTML = `This will be a source description from the database.<br/> It may include <a href="http://rixfix.com" target="_blank">links</a>.`
+          prepNotations(hintElem)
+          document.getElementById('hint-control').checked = true
+        }
+        else {
+          // console.log('showing hint', hintNo, question.hints[hintNo-1])
+          // let hintElem = document.getElementById('hint')
+          // hintElem.innerHTML = hints[hintNo-1]
+          // prepNotations(hintElem)
+          // document.getElementById('hint-control').checked = true
+          const hintBody = `<span class="tip-text"> ${hints[hintNo-1]} </span>`
+          evt.target.classList.toggle('tip')
+          evt.target.innerHTML += hintBody
+          prepNotations(evt.target)
+        }
+        return false
+      }
+
+      const classColors = {
+        Civics: {text: 'white', bkgd: '#F2994A'},
+        News:   {text: 'white', bkgd: '#9B51E0'},
+        Voting: {text: 'white', bkgd: '#2F80ED'},
+      }
+
+      // $('#followup-control').checked = false
+      $('#envelope').hidden = true
+      $('#main').hidden = true
+
+      if (questionIdx >= questions.length) {
+        $('header').hidden = true
+        $('#game-score').textContent = gameScore
+        $('#game-over').style.visibility = 'visible'
+        $('#envelope').hidden = true
+        return
+      }
+
+      const question = questions[questionIdx]
+      questionIdx++
+      const choiceNames = question.choices.trim().split(/<ol>\s*<li>\s*|\s*<\/li>\s*<li>\s*|\s*<\/li>\s*<\/ol>/).slice(1,-1)
+      const choices = choiceNames.map( (n, i) => `\n<button data-no="${i+1}" class="choice">${n}</button>` ).join('\n')
+      const hints = question.hints ? question.hints.trim().split(/<ol>\s*<li>\s*|\s*<\/li>\s*<li>\s*|\s*<\/li>\s*<\/ol>/).slice(1,-1) : ''
+          
+      let progPct = Math.floor(questionIdx / questions.length * 1000)
+      console.log('displayQuestion', progPct, question)
+
+      // await flashCategory(1000)
+      // $('#game header progress').value = progPct
+
+      $('#main').innerHTML = question.question_content + '<hr/>' + choices
+      $('#game .color-bar').style.backgroundColor = question.background_color || classColors[question.class].bkgd
+      $('#game .categories').style.backgroundColor = question.background_color || classColors[question.class].bkgd
+      $('#game .categories').style.color = question.text_color || classColors[question.class].text
+      $('#game .categories span').textContent = question.categories
+      $('#game .image img').src = question.bug_path_name || `./images/bugs/${question.class.toLowerCase()}.svg`
+      $('#envelope').hidden = false
+      animateCSS('#envelope', 'fadeIn')
+      await delay(1000)
+      $('#main').hidden = false
+      animateCSS('#main', 'fadeIn')
+
+      let progNode = $('#game header progress')
+      let progNow = Number(progNode.value)
+      console.log('prog', progNow, 'of', progPct)
+      while (progNow <= progPct) {
+        progNow += 1
+        // console.log(progNow)
+        progNode.value = progNow 
+        await delay(5)
+      }
+
+      document.querySelectorAll('.choice').forEach( btn => btn.onclick = respond)
+      // $('#followup').innerHTML = question.followup
+      prepNotations($('#main'))
+      // prepNotations($('#followup'))
+      questionScore = 100
+      $('#header-question-score').textContent = questionScore
+    }
+
+    async function main() {
+      let params = {}
+      new URLSearchParams(location.hash.slice(1)).forEach( (v, k) => params[k] = `${v}`)
+      console.log('params', params)
+
+
+      if (params.code) $('#play_code').value = params.code
+      const code = $('#play_code').value
+      //@@@ for testing purposes, skp pregame
+      // $('#btn-register').onclick = async evt => {
+      {
+        $('#pre-game').hidden = true
+        $('#game').hidden = false
+        const el = $('#flash-category h1')
+
+        console.log('signing in', code, $('#player_handle').value)
+
+        // wait for player handle before instantiating
+        const drone = new Scaledrone('s8VguFUX78IuhUH5', {data: {name: $('#player_handle').value}})
+
+        drone.on('open', evt => console.log('Channel opened.', evt || '') )
+        drone.on('err', err => alert(`Game channel failed to open: ${JSON.stringify(err)}`) )
+        drone.on('close', evt => console.log('Channel closed.', evt || '') )
+
+        let room = drone.subscribe(`observable-game-${$('#play_code').value}`)
+        room.on('open', evt => console.log('Room opened.', evt || '') )
+        room.on('err', err => alert(`Game room failed to open: ${JSON.stringify(err)}`) )
+        room.on('close', evt => console.log('Room closed.', evt || '') )
+        room.on('members', async m => {
+          // console.log('m', m)
+          playId = m.filter( r => r.clientData.name.endsWith('** Game Runner **') )[0].clientData.play
+          // console.log('playId', playId)
+          questions = await request(`play_detail?play=eq.${playId}`)
+          console.log('questions', questions)
+          displayQuestion()
+        })
+
+      }
+    }
+
+    // delete localStorage.access_token // keep this anonymous
+    main()
+  </script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
+   <!-- <link rel="shortcut icon" href="/retail/images/favicon.ico"> -->
+  <title>V2 - Run a Game</title>
+  <link href="../css/style.css" rel="stylesheet" type="text/css">
+  <script src='https://cdn.scaledrone.com/scaledrone.min.js'></script>
+
+  <style>
+    body {
+      width: clamp(340px, 90%, 800px);
+      margin: auto;
+    }  
+    ul {
+      list-style-type: none;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <fieldset>
+      <legend>Game setup</legend>
+      <label for="game_code">Game Code</label>
+      <input type="text" id="game_code" type="number" placeholder="A four digit number"/>
+      <button type="button" id="btn-copy">&#128203;</button>
+      <fieldset id="game-setup">
+        <legend>Choose a Game Plan</legend>
+        <ul>
+          <li data-row><label><input type="radio" name="game_plan"/><span>Game plan</span></label></li>
+        </ul>
+        <button id="btn-open-game">Open Game for signing in</button>
+      </fieldset>
+    </fieldset>
+    <div id="game-start" hidden>
+      <h2>Game is ready. Distribute the game code to players.</h2>
+      <p>By pressing the button beside the game code above, you'll copy the url to the clipboard. Then paste it in a text, chat or email
+      to the players, or you can give them <a id="play-game-url", href="#" target="_blank">this url</a> and the game code and they can enter the game themselves.</p>
+      <fieldset id="question-list"><legend>Questions</legend>
+        <ol></ol>
+      </fieldset>
+      <fieldset id="player-list"><legend>Players</legend>
+        <ul></ul>
+      </fieldset>
+      <p>When everyone has entered, press the button below to issue the first question.</p>
+      <p>From there, players will automatically get the next question when all the players answer the previous question. Or you can force
+      the next question by pressing the button again.</p>
+      <button id="btn-next-question">Next Question</button>
+    </div>
+  </div>
+  <script>
+    const $ = selector => document.querySelector(selector) 
+
+    async function request2(relName, query, data) {
+      const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYxNDQ0MjY4OSwiZXhwIjoxOTMwMDE4Njg5fQ.TBULgqU-TgI1gL0iScxM0k4B1xTBnQ_q0XLpdu7qnAs'
+      const dbId = 'cqxvknmoofzuhxbonmoj'
+      const method = query ? (data ? (data == 'DELETE' ? 'DELETE' : 'PATCH') : 'GET') : data ? 'POST' : 'GET'
+      document.body.style.cursor = 'wait'
+      const resp = await fetch(`https://${dbId}.supabase.co/rest/v1/${relName}?${query}`, {
+        method: method,
+        cache: 'no-cache',
+        headers: {
+          apikey: anonKey,
+          Authorization: `Bearer ${localStorage.access_token || anonKey}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation'
+        },
+        body: data ? JSON.stringify(data) : undefined
+      })
+
+      const json = await resp.json()
+      document.body.style.cursor = 'auto'
+      if (!resp.ok) {
+        alert('Database request failed. (See console for details.)')
+        return []
+      }
+      console.log('query', query, 'returns', json)
+      return json
+    }
+    var curQuestionNo = 0
+    async function main() {
+      var players = []
+      var questions = []
+      var drone
+      let codeElem = $('#game_code')
+      codeElem.value = Math.floor(Math.random()*9999)
+      $('#btn-copy').onclick = evt => {
+        navigator.clipboard.writeText(`${location.href.replace('run', 'play')}#code=${codeElem.value}`)
+      }
+      
+      $('#play-game-url').href = location.href.replace('run', 'play')
+      let plans = await request2('game_plan')
+      console.log('gamePlans', plans)
+
+      let childTmpl = $('li[data-row]')
+      plans.forEach( row => {
+        let newItem = childTmpl.cloneNode(true)
+        newItem.querySelector('input[type=radio]').value = row.name
+        newItem.querySelector('label span').textContent = row.name
+        childTmpl.parentElement.appendChild(newItem)
+      })
+      childTmpl.remove()
+   
+      $('#btn-open-game').onclick = async evt => {
+        evt.preventDefault()
+        const checked = $('input[name=game_plan]:checked')
+        if (checked == null) {
+          alert('Please select a Game Plan first.')
+          return
+        }
+        console.log('ready to open game', checked.value)
+        let data = await request2('game', null, {game_plan: checked.value, game_code: codeElem.value})
+        const gameId = data[0].game
+
+        // const drone = new Scaledrone('s8VguFUX78IuhUH5');
+        drone = new Scaledrone('s8VguFUX78IuhUH5', {data: {name: '** Game Runner **', game: gameId}})
+        drone.on('open', evt => console.log('Channel opened.', evt) )
+        drone.on('err', err => alert(`Game channel failed to open: ${JSON.stringify(err)}`) )
+        drone.on('close', evt => console.log('Channel closed.', evt) )
+
+        const room = drone.subscribe(`observable-game-${codeElem.value}`)
+        // room.on('open', err => err && alert(`Game room failed to open: ${JSON.stringify(err)}`) )
+        room.on('open', evt => console.log('Room opened.', evt) )
+        room.on('err', err => alert(`Game room failed to open: ${JSON.stringify(err)}`) )
+        room.on('close', evt => console.log('Room closed.', evt) )
+        // room.on('members', m => players = m )
+        room.on('member_join', m => {
+          players.push(m)
+          $('#player-list ul').innerHTML = players.map( p => `<li>${p.clientData.name}</li>` ).join('\n') 
+        })
+        room.on('member_leave', ({id}) => {
+          const index = players.findIndex(m => m.id === id)
+          players.splice(index, 1)
+        })
+        data = await request2('game', `select=game_plan(game_plan_question(sequence,question))&game=eq.${gameId}&game_plan.game_plan_question.order=sequence`)
+        questions = data[0].game_plan.game_plan_question
+        console.log('questions', questions)
+        $('#question-list ol').innerHTML = questions.map( q => `<li id="question-${q.sequence}">${q.question}</li>` ).join('\n') 
+
+        $('#game-setup').hidden = true
+        $('#game-start').hidden = false
+      }
+      $('#btn-next-question').onclick = evt => {
+        evt.preventDefault()
+        curQuestionNo = 0 //@@@ for testing
+        curQuestionNo++
+        drone.publish({room: `observable-game-${codeElem.value}`, message: {no: curQuestionNo}})
+        console.log('message sent.', curQuestionNo)
+        $(`#question-${curQuestionNo}`).style.fontWeight = 'bold'
+      }
+    }
+
+    delete localStorage.access_token // keep this anonymous
+    main()
+
+
+  </script>
+</body>
+</html>
