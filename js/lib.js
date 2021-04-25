@@ -28,6 +28,7 @@ async function request(query, data, options = {}) {
   })
 
   const json = await resp.json()
+  // console.log('request returns', resp, json)
   document.body.style.cursor = 'auto'
   if (!resp.ok) {
     // alert('Database request failed. (See console for details.)')
