@@ -30,11 +30,21 @@ async function request(query, data, options = {}) {
   const json = await resp.json()
   document.body.style.cursor = 'auto'
   if (!resp.ok) {
-    alert('Database request failed. (See console for details.)')
+    // alert('Database request failed. (See console for details.)')
+    if (confirm('Error! Could not reach the database. Try Again?')) {
+      await delay(1500)
+      return request(query, data, options)
+    }
+    alert(`Please take note of the following (or take a screenshot)
+and report it to verifyitsupport@lwvalameda.org:
+
+query: ${query}
+data: ${JSON.stringify(data, null, 2)}
+resp: ${JSON.stringify(json, null, 2)}`)
     return []
   }
   // console.log('query', query, 'returns', json)
   return json
 }
 
-console.log('hello from lib.js')
+// console.log('hello from lib.js')

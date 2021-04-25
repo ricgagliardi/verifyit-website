@@ -7,7 +7,7 @@
    <!-- <link rel="shortcut icon" href="/retail/images/favicon.ico"> -->
   <title>Multiplayer VerifyIt</title>
   <!-- <link href="../css/style.css" rel="stylesheet" type="text/css"> -->
-  <!-- <script src="https://unpkg.com/@supabase/supabase-js"></script> -->
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
   <script src='https://cdn.scaledrone.com/scaledrone.min.js'></script>
   <script src='../js/lib.js'></script>
 
@@ -33,13 +33,8 @@
       width: clamp(340px, 90%, 800px);
       margin: auto;
     }  
-    /* ul {
-      list-style-type: none; @@@ why did I have this?
-    } */
-    cite {
-      margin-top: -20px;
-      font-size: .75rem;
-      float:right;
+    ul {
+      list-style-type: none;
     }
     .choice {
       width:50vw;
@@ -208,9 +203,27 @@
   <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script> -->
 
   <script>
-    // const { createClient } = supabase
-    // supabase = createClient('https://cqxvknmoofzuhxbonmoj.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYxNDQ0MjY4OSwiZXhwIjoxOTMwMDE4Njg5fQ.TBULgqU-TgI1gL0iScxM0k4B1xTBnQ_q0XLpdu7qnAs')
-    // console.log('supabase', supabase)
+    // window.onerror = function (msg, url, lineNo, columnNo, error) {
+    //   console.log('ONERROR?', msg)
+    //   if (msg.toLowerCase().includes('script error')) {
+    //     alert('Script Error: See Browser Console for Detail')
+    //   } else {
+    //     var message = [
+    //       'Message: ' + msg,
+    //       'URL: ' + url,
+    //       'Line: ' + lineNo,
+    //       'Column: ' + columnNo,
+    //       'Error object: ' + JSON.stringify(error)
+    //     ].join(' - ')
+
+    //     alert(message)
+    //   }
+    //   return false
+    // }
+
+    const { createClient } = supabase
+    supabase = createClient('https://cqxvknmoofzuhxbonmoj.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYxNDQ0MjY4OSwiZXhwIjoxOTMwMDE4Njg5fQ.TBULgqU-TgI1gL0iScxM0k4B1xTBnQ_q0XLpdu7qnAs')
+    console.log('supabase', supabase)
 
     var questions = []
     var sources = {}
@@ -256,29 +269,31 @@
             return
           }
           if (isNaN(Number(targetRef[1]))) {
-            // console.log('  gatherSources', targetRef[1], '-', n.textContent, '-', targetNode.textContent)
+            console.log('  gatherSources', targetRef[1], '-', n.textContent, '-', targetNode.textContent)
             sources[targetRef[1].toLowerCase()] = '(not available)'
           }
         })
       })
       if (Object.keys(sources).length > 0) sources['mediabiasfactcheck.com'] = '(not available)'
       // console.log('sources', Object.keys(sources))
-      const resp = await request(`source_lookup?lower=in.(${Object.keys(sources).join(',')})`)
+      // const resp = await request(`source_lookup?lower=in.(${Object.keys(sources).join(',')})`)
       // const resp = await request(`source?name=in.(${Object.keys(sources).join(',')})`) //@@@ should be case insensitive
       // const resp = await request(`source?name=in.("${Object.keys(sources).join('","')}")`) //@@@ should be case insensitive
       // const clause = Object.keys(sources).map( n => `name.ilike.${n}`).join(',')
       // console.log('clause', clause)
-      // let {data, error} = await supabase.from('source_lookup').select("*").in('lower', Object.keys(sources))
+      console.log('sources pre', sources)
+      const {data, error} = await supabase.from('source_lookup').select("*").in('lower', Object.keys(sources))
+      if (error) throw error
       // if (error) {
       //   alert('Failed to fetch sources: ' + JSON.stringify(error, null, 2))
       //   return sources
       // }
-      // data.forEach( r => sources[r.lower] = r.description)
+      data.forEach( r => sources[r.lower] = r.description)
       
       // const resp = await request(`source?or=(${clause})`) // case insensitive
       // console.log('resp', resp)
-      resp.forEach( r => sources[r.lower] = r.description)
-      // console.log('sources', sources)
+      // resp.forEach( r => sources[r.lower] = r.description)
+      console.log('sources', sources)
       return sources
     }
     async function displayQuestion() {
@@ -287,7 +302,7 @@
         evt.preventDefault()
         const btn = evt.target
         let choiceNo = btn.dataset.no || btn.closest('button').dataset.no
-        // console.log('respond', choiceNo, choiceNo == question.correct_choice ? 'right' : 'wrong')
+        console.log('respond', choiceNo, choiceNo == question.correct_choice ? 'right' : 'wrong')
         btn.classList.add('selected')
         animateCSS(evt.target, 'pulse')
         await delay(1500)
@@ -322,7 +337,7 @@
       async function displayFollowup() {
         await animateCSS('#question-content', 'fadeOut')
         $('#question-content').hidden = true
-        // console.log('displayFollowup')
+        console.log('displayFollowup')
         $('#question-content').innerHTML = question.followup + '<hr><button id="btn-next" class="choice">Next Question</button>'
         $('#btn-next').onclick = displayQuestion
         prepNotations()
@@ -334,6 +349,7 @@
         // necessary because these spans confuse our hint notation
         // better solution is to remove from database, but I don't want to take that risk at this stage of the project
         document.querySelectorAll('span[style="color:#000000"]').forEach( node => {
+          // console.log('black node', node)
           node.replaceWith(...node.childNodes)
         })
 
@@ -341,17 +357,15 @@
           const targetNode = n.parentElement.nextSibling
           if (!targetNode) {
             console.warn('could not find target node for', n)
-            // debugger seems these only pop up when recursing on prepNotations - recursion disabled for now
             return
           }
           const targetRef = targetNode.textContent.match(/^\s*\[(.+)\]/) //[1]
           if (!targetRef) {
             console.warn('could not find target ref for', targetNode)
-            // debugger
             return
           }
           targetNode.textContent = targetNode.textContent.replace(/^\s*\[(.+)\]/, '')
-          // console.log('  prepNotation', targetRef[1], n.textContent.slice(0,20) + '...')
+          console.log('  prepNotation', targetRef[1], n.textContent.slice(0,20) + '...')
           const content = n.textContent
           if (isNaN(Number(targetRef[1]))) {
             // console.warn(`${content} is a source: ${targetRef[1]}`)
@@ -361,8 +375,7 @@
             const hintIdx = Number(targetRef[1]) - 1
             n.parentNode.outerHTML = `<span class="tip">${content}<span class="tip-wide">${hints[hintIdx]}</span></span>`
           }
-          //@@@ this made it recursive, but that doesn't really work for hovering. waiting for new design ideas
-          // prepNotations()
+          prepNotations()
         })
       }
 
@@ -391,7 +404,7 @@
       const hints = question.hints ? question.hints.trim().split(/<ol>\s*<li>\s*|\s*<\/li>\s*<li>\s*|\s*<\/li>\s*<\/ol>/).slice(1,-1) : ''
           
       let progPct = Math.floor(questionIdx / questions.length * 1000)
-      // console.log('displayQuestion', questionIdx, question.title)
+      console.log('displayQuestion', questionIdx, question.title)
 
       $('#question-content').innerHTML = question.question_content + '<hr/>' + choices
       $('#game .color-bar').style.backgroundColor = question.background_color || classColors[question.class].bkgd
@@ -424,23 +437,31 @@
     }
 
     async function fetchQuestions(game) {
-      let gc = await request(`game_category?select=categories,no_questions&game=eq.${game}`)
-      // console.log('gc', gc)
+      // let gc = await request(`game_category?select=categories,no_questions&game=eq.${game}`)
+      let {data: gc, error} = await supabase.from('game_category').select('categories, no_questions').eq('game', game)
+      if (error) throw error
+      console.log('gc', gc)
       let result = await Promise.all(gc.map( async cat => {
-        const buf = await request( `random_question?select=title&game=eq.${game}&categories=eq.${cat.categories}&limit=${cat.no_questions}`)
+        // const buf = await request( `random_question?select=title&game=eq.${game}&categories=eq.${cat.categories}&limit=${cat.no_questions}`)
+        const {data: buf, error} = await supabase.from('random_question').select('title').eq('game', game).eq('categories', cat.categories).limit(cat.no_questions)
+        if (error) throw error
         return buf.map( r => ({title: r.title, categories: cat.categories}) )
       }))
       return result.flat().sort(() => Math.random() - 0.5).map( (r,i) => ({title: r.title, categories: r.categories, sequence: i}) )
     }
 
     async function main() {
+      try {
       let params = {}
       new URLSearchParams(location.hash.slice(1)).forEach( (v, k) => params[k] = `${v}`)
-      // console.log('params', params)
+      console.log('params', params)
 
       if (params.question) {
-        // console.log('question', params.question)
-        questions = await request(`question?title=eq.${params.question}`)
+        console.log('question', params.question)
+        // questions = await request(`question?title=eq.${params.question}`)
+        let {data, error} = await supabase.from('question').eq('title', params.question)
+        if (error) throw error
+        questions = data
         if (questions.length != 1) {
           alert(`Could not find question '${params.question}'.`)
           return
@@ -457,15 +478,19 @@
         return
       }  
       if (params.game) {
-        // console.log('game', params.game)
-        const playId = (await request('play', {game: params.game, play_code: 0}))[0].play
-        // console.log('ready to start game', params.game, playId)
+        console.log('game', params.game)
+        // const playId = (await request('play', {game: params.game, play_code: 0}))[0].play
+        const {data, error} = await supabase.from('play').insert([{game: params.game, play_code: 0}])
+        if (error) throw error
+        const playId = data[0].play
+        console.log('ready to start game', params.game, playId)
         const qs = await fetchQuestions(params.game)
-        await request('question_play', qs.map( r => ({question: r.title, play: playId, categories: r.categories, sequence: r.sequence}) ))
-
+        // await request('question_play', qs.map( r => ({question: r.title, play: playId, categories: r.categories, sequence: r.sequence}) ))
+        const {error: err2} = await supabase.from('question_play').insert(qs.map( r => ({question: r.title, play: playId, categories: r.categories, sequence: r.sequence}) ))
+        if (err2) throw err2
         questions = await request(`play_detail?play=eq.${playId}`)
         sources = await gatherSources()
-        // console.log('questions', questions)
+        console.log('questions', questions)
         $('#pre-game').hidden = true
         $('#game').hidden = false
         displayQuestion()
@@ -480,7 +505,7 @@
         $('#game').hidden = false
         // const el = $('#flash-category h1')
 
-        // console.log('signing in', $('#play_code').value, $('#player_handle').value)
+        console.log('signing in', $('#play_code').value, $('#player_handle').value)
 
         // wait for player handle before instantiating
         const drone = new Scaledrone('s8VguFUX78IuhUH5', {data: {name: $('#player_handle').value}})
@@ -494,27 +519,41 @@
         room.on('err', err => alert(`Game room failed to open: ${JSON.stringify(err)}`) )
         room.on('close', evt => console.log('Room closed.', evt || '') )
         room.on('members', async m => {
-          // console.log('m', m)
+          console.log('m', m)
           playId = m.filter( r => r.clientData.name.endsWith('** Game Runner **') )[0].clientData.play
           // console.log('playId', playId)
-          questions = await request(`play_detail?play=eq.${playId}`)
+          // questions = await request(`play_detail?play=eq.${playId}`)
+          const {data, error} = await supabase.from('play_detail').eq('play', playId)
+          if (error) throw error
+          questions = data
           sources = await gatherSources()
-          // console.log('questions', questions)
+          console.log('questions', questions)
           displayQuestion()
         })
 
       }
     }
+      catch (err) {
+        console.error(err)
+        console.trace(err)
+        alert(`Please take note of the following (or take a screenshot)
+and report it to verifyitsupport@lwvalameda.org:
 
-    // delete localStorage.access_token // keep this anonymous
+${JSON.stringify(err, null, 2)}`)
+      }
+    }
+
+    
     document.onkeypress = e => {
       if (e.ctrlKey && e.key == '\\') {
         let title = questions[questionIdx-1].title
-        // console.log('ready to open', title)
+        console.log('ready to open', title)
         window.open(`https://v2-editor.verifyit.buzz/question-form#title=${title}`, '_blank')
       }
     }
+
     main()
+
   </script>
 </body>
 </html>

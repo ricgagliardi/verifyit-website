@@ -9,6 +9,7 @@
   <!-- <link href="../css/style.css" rel="stylesheet" type="text/css"> -->
   <script src="https://cdn.scaledrone.com/scaledrone.min.js"></script>
   <script src="../../js/lib.js"></script>
+  <script src="../../js/iziToast.min.js" type="text/javascript"></script>
   <style>
     @import "../../css/mini-default.min.css";
     @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap');
@@ -34,7 +35,8 @@
       <legend>Game setup</legend>
       <label for="play_code">Game Code</label>
       <input type="text" id="play_code" type="number" placeholder="A four digit number"/>
-      <button type="button" id="btn-copy">&#128203;</button>
+      <button type="button" id="btn-copy" style="visibility:hidden">&#128203; Copy</button>
+      <button type="button" id="btn-play" style="visibility:hidden">Play Yourself</button>
       <fieldset id="game-setup">
         <legend>Choose a Game</legend>
         <ul>
@@ -45,8 +47,10 @@
     </fieldset>
     <div id="game-start" hidden>
       <h2>Game is ready. Distribute the game code to players.</h2>
-      <p>By pressing the button beside the game code above, you'll copy the url to the clipboard. Then paste it in a text, chat or email
-      to the players, or you can give them <a id="play-game-url", href="#" target="_blank">this url</a> and the game code and they can enter the game themselves.</p>
+      <p>By pressing the Copy button above, you'll copy the url to the clipboard. Then paste it in a text, chat or email
+      to the players.  Or you can give them this url:
+      <p id="game-url" style="padding:1rem">(game url here)</p>
+      <p>and the game code and they can enter the game themselves.</p>
       <fieldset id="question-list"><legend>Questions</legend>
         <ol></ol>
       </fieldset>
@@ -63,7 +67,7 @@
 
     async function fetchQuestions(game) {
       let gc = await request(`game_category?select=categories,no_questions&game=eq.${game}`)
-      console.log('gc', gc)
+      // console.log('gc', gc)
       let result = await Promise.all(gc.map( async cat => {
         const buf = await request( `random_question?select=title&game=eq.${game}&categories=eq.${cat.categories}&limit=${cat.no_questions}`)
         return buf.map( r => ({title: r.title, categories: cat.categories}) )
@@ -79,19 +83,27 @@
       var drone
       let codeElem = $('#play_code')
       codeElem.value = Math.floor(Math.random()*9999)
+      let gameUrl = location.href.replace(/game-runner.*/, '')
       $('#btn-copy').onclick = evt => {
-        navigator.clipboard.writeText(`${location.href.replace('game-runner/', '')}#code=${codeElem.value}`)
+        navigator.clipboard.writeText(`${gameUrl}#code=${codeElem.value}`)
+        iziToast.show({title: 'Copied to clipboard.'})
       }
-      
-      $('#play-game-url').href = location.href.replace('game-runner', '')
-      let games = await request('game?name=neq.(none)&name=not.ilike.test*')
+      $('#btn-play').onclick = evt => {
+        window.open(`${gameUrl}#code=${codeElem.value}`)
+      }
+      $('#game-url').textContent = gameUrl
+      let games = await request('game?select=name,description,game_category(no_questions)&name=neq.(none)&order=name')
       console.log('games', games)
 
       let childTmpl = $('li[data-row]')
       games.forEach( row => {
+        let cs = row.game_category.length
+        let qs = row.game_category.map( gc => gc.no_questions ).reduce( (a,c) => a + c , 0)
+        // console.log('  row', row, cs, qs)
+        if (cs == 0) return
         let newItem = childTmpl.cloneNode(true)
         newItem.querySelector('input[type=radio]').value = row.name
-        newItem.querySelector('label span').textContent = row.name
+        newItem.querySelector('label span').innerHTML = `<strong title="${row.description}">${row.name}</strong> - ${cs} categor${cs == 1 ? 'y' : 'ies'}, ${qs} questions` 
         childTmpl.parentElement.appendChild(newItem)
       })
       childTmpl.remove()
@@ -137,15 +149,17 @@
 
         $('#game-setup').hidden = true
         $('#game-start').hidden = false
+        $('#btn-copy').style.visibility = 'visible'
+        $('#btn-play').style.visibility = 'visible'
       }
-      $('#btn-next-question').onclick = evt => {
-        evt.preventDefault()
-        curQuestionNo = 0 //@@@ for testing
-        curQuestionNo++
-        drone.publish({room: `observable-game-${codeElem.value}`, message: {no: curQuestionNo}})
-        console.log('message sent.', curQuestionNo)
-        $(`#question-${curQuestionNo}`).style.fontWeight = 'bold'
-      }
+      // $('#btn-next-question').onclick = evt => {
+      //   evt.preventDefault()
+      //   curQuestionNo = 0 //@@@ for testing
+      //   curQuestionNo++
+      //   drone.publish({room: `observable-game-${codeElem.value}`, message: {no: curQuestionNo}})
+      //   console.log('message sent.', curQuestionNo)
+      //   $(`#question-${curQuestionNo}`).style.fontWeight = 'bold'
+      // }
     }
 
     main()
