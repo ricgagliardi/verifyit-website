@@ -24,7 +24,7 @@
     }
     * {
       font-family: Quicksand, arial, sans, sans-serif;
-      font-size: max(1.2rem, 2vw);
+      font-size: max(1.2rem, 1.5vw);
       margin: 0;
       padding: 0;
     }
@@ -41,8 +41,37 @@
       font-size: .75rem;
       float:right;
     }
+
+    hr {
+      background: none;
+      margin-bottom: 3%;
+    }
+
+    progress {
+      height: 17px;
+      border-radius: 50px;
+    }
+    progress::-webkit-progress-bar {
+      border-radius: 50px;
+    }
+    progress::-webkit-progress-value {
+      border-radius: 50px;
+    }
+    progress::-moz-progress-bar {
+      border-radius: 50px;
+    }
+
+    #header-game-score {
+      font-weight: bold;
+    }
+
+    header.sticky {
+      border: none;
+      padding: 3% 0 0;
+    }
+
     .choice {
-      width:50vw;
+      width: 95%;
       background: #f8f8f8;;
       border-color: #BABABA;
       border-radius: 8px;
@@ -51,90 +80,106 @@
       font-weight: 600;
     }
     .choice:hover {
-      /* background: #f8f8f8;; */
+      background: #E6E6FD;
       border-color: #5352ED;
+      color: #5352ED;
     }
     .choice.selected {
       color: #8180E4;
       background-color: #E6E6FD;
-      --animate-duration: .25s;
+      --animate-duration: .2s;
     }
     .choice.wrong-choice {
       background-color: #FF0037;
+      border-color: #FF0037;
       color: white;
     }
     .choice.right-choice {
       background-color: #27AE60;
+      border-color: #27AE60;
       color: white;
     }
-    question-content {
-      width: 61vw;
-      margin: auto;
-      text-align: center;
+
+    /* hidden elements */
+    #question-content img,
+    #header-question-score {
+      display: none;
     }
+
+    #envelope.container {
+      padding: 0 10%;
+    }
+    @media only screen and (max-width: 500px) {
+      #envelope.container {
+        padding: 0;
+      }
+    }
+
     .card {
       max-height: 80vh !important;
       max-width: 75vh !important;
     }
 
     .tip {
-      color: #219653;
+      color: #141413;
       position: relative;
       display: inline-block;
-      /* border-bottom: 1px dotted black; */
+      text-decoration: underline;
+      cursor: pointer;
     }
 
-    .tip .tip-text {
-      font-size: 1rem;
-      visibility: hidden;
-      width: 25vw;
-      background-color: #5C5BEE;
-      color: #fff;
-      text-align: center;
-      padding: 5px 0;
-      border-radius: 6px;
-      top: 150%;
-      left: 50%;
-      margin-left: -12vw;
-      position: absolute;
-      z-index: 1;
-    }
     .tip .tip-wide {
-      font-size: 1rem !important;
       visibility: hidden;
-      width: 75vw;
-      background-color: #5C5BEE;
-      color: #fff;
-      /* text-align: center; */
-      padding: 5px 0;
-      border-radius: 6px;
+      font-size: 1rem !important;
+      width: 45vw;
+      background-color: #f2f2f2;
+      color: #141413;
+      padding: 4% 5%;
+      border-radius: 16px;
+      border: 2px solid #C4C4C4;
       top: 150%;
       left: 50%;
       margin-left: -25vw;
       position: absolute;
       z-index: 1;
     }
-    .tip .tip-text::after {
-      content: " ";
-      position: absolute;
-      bottom: 100%;  /* At the top of the tooltip */
-      left: 50%;
-      margin-left: -5px;
-      border-width: 5px;
-      border-style: solid;
-      border-color: transparent transparent #5C5BEE transparent;
-    }
-    .tip:hover .tip-text {
-      visibility: visible;
-    }
+
     .tip:hover .tip-wide {
       visibility: visible;
+      cursor: pointer;
     }
 
+    .tip .tip-wide p,
+    .tip .tip-wide h1,
+    .tip .tip-wide h2,
+    .tip .tip-wide h3 {
+      font-size: 1rem;
+    }
 
+    .title-container {
+      margin: 2% 0;
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
 
+    .icon-container {
+      width: 32px;
+      height: 32px;
+    }
+
+    .categories {
+      font-size: 1.4rem;
+      margin-left: 1.5%;
+      font-weight: bold;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-size: 1.2rem;
+    }
   </style>
 </head>
+
 <body>
   <div id="pre-game">
     <h1>Multiplayer Game</h1>
@@ -152,12 +197,12 @@
   <div id="game" hidden>
     <header class="sticky container">
       <div class="row">
-        <div class="col-sm-1" style="padding-top: 1vh; font-size:small; color:grey;">
-          <span id="header-question-score">0</span>
+        <div class="col-sm-1" style="color:grey;">
+          <span id="header-question-score">0</span><span>&#8592;</span>
 
         </div>
         <div class="col-sm-9 col-md-10" style="text-align:center;">
-          <progress value="0" max="1000" style="border:solid #cccccc 2px; border-radius:10px; height:2vh; --progress-fore-color:#27AE60;"></progress>
+          <progress value="0" max="1000" style="--progress-fore-color:#27AE60;"></progress>
         </div>
         <div class="col-sm-2 col-md-1" style="text-align:right; padding-top:.3vh">
           <span>&#11088; </span><span id="header-game-score">0</span>
@@ -167,17 +212,22 @@
     </header>
     <div id="envelope" class="container">
       <div class="row">
-        <div class="image col-sm-2" style="max-height:7.5vh; aspect-ratio: 1 / 1">
+        <div class="title-container">
+          <div class="image icon-container"><img></div>
+          <div class="categories">
+            <span></span>
+          </div>
+        </div>
+        <!-- <div class="image col-sm-2" style="max-height:7.5vh; aspect-ratio: 1 / 1">
           <img>
         </div>
         <div class="categories col-sm-10" style="text-align: center;">
           <span style="font-weight:bold; font-size:max(2rem,3vw);"></span>
-        </div>
+        </div> -->
       </div>
       <div class="row">
-        <div class="color-bar col-sm-1">
-        </div>
-        <div id="question-content" class="col-sm-11" hidden></div>
+        <!-- <div class="color-bar col-sm-1"></div> -->
+        <div id="question-content" class="col-sm-12" hidden></div>
       </div>
     </div>
 
@@ -296,7 +346,7 @@
           // console.log('right')
           btn.classList.add('right-choice')
           let buf = btn.textContent
-          btn.innerHTML = 'Correct!'
+          btn.innerHTML = 'Correct!' + ' &#128516;'
           gameScore = gameScore + questionScore
           $('#header-game-score').textContent = gameScore
           await delay(1200)
@@ -306,7 +356,7 @@
           // console.log('wrong')
           btn.classList.add('wrong-choice')
           let buf = btn.textContent
-          btn.innerHTML = 'Incorrect'
+          btn.innerHTML = '&#128533; ' + 'Incorrect'
           await delay(1200)
           btn.textContent = buf
           btn.classList.remove('wrong-choice')
@@ -367,9 +417,9 @@
       }
 
       const classColors = {
-        Civics: {text: 'white', bkgd: '#ef0034'},
-        News:   {text: 'white', bkgd: '#bc00a4'},
-        Voting: {text: 'white', bkgd: '#009dce'},
+        Civics: {text: '#F19545', bkgd: ''},
+        News:   {text: '#d52ada', bkgd: ''},
+        Voting: {text: '#0098dc', bkgd: ''},
       }
 
       // $('#followup-control').checked = false
@@ -393,8 +443,8 @@
       let progPct = Math.floor(questionIdx / questions.length * 1000)
       // console.log('displayQuestion', questionIdx, question.title)
 
-      $('#question-content').innerHTML = question.question_content + '<hr/>' + choices
-      $('#game .color-bar').style.backgroundColor = question.background_color || classColors[question.class].bkgd
+      $('#question-content').innerHTML = question.question_content + '' + choices
+      // $('#game .color-bar').style.backgroundColor = question.background_color || classColors[question.class].bkgd
       $('#game .categories').style.backgroundColor = question.background_color || classColors[question.class].bkgd
       $('#game .image').style.backgroundColor = question.background_color || classColors[question.class].bkgd
       $('#game .categories').style.color = question.text_color || classColors[question.class].text
