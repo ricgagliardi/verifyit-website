@@ -186,9 +186,9 @@
 </head>
 
 <body>
-  <div id="pre-game">
+  <div id="pre-game" hidden>
     <h1>Multiplayer Game</h1>
-    <p>The game runner will give you the Game Code to sign into their came.</p>
+    <p>The game runner will give you the Game Code to sign into their Game.</p>
     <fieldset>
       <legend>Select a game</legend>
       <label for="play_code">Game Code</label>
@@ -259,30 +259,23 @@
     </div>
   </div>
 
-
-  <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script> -->
-
   <script>
-    // const { createClient } = supabase
-    // supabase = createClient('https://cqxvknmoofzuhxbonmoj.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYxNDQ0MjY4OSwiZXhwIjoxOTMwMDE4Njg5fQ.TBULgqU-TgI1gL0iScxM0k4B1xTBnQ_q0XLpdu7qnAs')
-    // console.log('supabase', supabase)
 
     var questions = []
     var sources = {}
     var questionIdx = 0
     var questionScore = 0
     var gameScore = 0
+    var drone = null
 
-    const animateCSS = (element, animation, prefix = 'animate__') =>
-      // We create a Promise and return it
-      new Promise((resolve, reject) => {
+    function animateCSS(element, animation, prefix = 'animate__') {
+      return new Promise((resolve, reject) => {
         const animationName = `${prefix}${animation}`;
         // const node = document.querySelector(element);
         const node = element instanceof HTMLElement ? element : document.querySelector(element)
 
         node.classList.add(`${prefix}animated`, animationName);
 
-        // When the animation ends, we clean the classes and resolve the Promise
         function handleAnimationEnd(event) {
           event.stopPropagation();
           node.classList.remove(`${prefix}animated`, animationName);
@@ -291,6 +284,7 @@
 
         node.addEventListener('animationend', handleAnimationEnd, {once: true});
       })
+    }
 
     async function gatherSources() {
       questions.forEach( q => {
@@ -316,26 +310,27 @@
           }
         })
       })
-      if (Object.keys(sources).length > 0) sources['mediabiasfactcheck.com'] = '(not available)'
+      // if (Object.keys(sources).length > 0) sources['mediabiasfactcheck.com'] = '(not available)'
       // console.log('sources', Object.keys(sources))
       const resp = await request(`source_lookup?lower=in.(${Object.keys(sources).join(',')})`)
-      // const resp = await request(`source?name=in.(${Object.keys(sources).join(',')})`) //@@@ should be case insensitive
-      // const resp = await request(`source?name=in.("${Object.keys(sources).join('","')}")`) //@@@ should be case insensitive
-      // const clause = Object.keys(sources).map( n => `name.ilike.${n}`).join(',')
-      // console.log('clause', clause)
-      // let {data, error} = await supabase.from('source_lookup').select("*").in('lower', Object.keys(sources))
-      // if (error) {
-      //   alert('Failed to fetch sources: ' + JSON.stringify(error, null, 2))
-      //   return sources
-      // }
-      // data.forEach( r => sources[r.lower] = r.description)
-      
-      // const resp = await request(`source?or=(${clause})`) // case insensitive
       // console.log('resp', resp)
       resp.forEach( r => sources[r.lower] = r.description)
       // console.log('sources', sources)
       return sources
     }
+
+    function informGameRunner(questionScore) {
+      if (drone == null) return // running single-player or test
+      const roomName = Object.keys(drone.rooms)[0]
+      console.log('about to inform game runner question', questionIdx, 'score', gameScore, 'room', roomName)
+      drone.publish({room: roomName, message: {
+        questionNo: questionIdx, 
+        qScore: questionScore,
+        bonus: 0,
+        gScore: gameScore
+      }})
+    }
+
     async function displayQuestion() {
 
       async function respond(evt) {
@@ -354,7 +349,8 @@
           btn.innerHTML = 'Correct!' + ' &#128516;'
           gameScore = gameScore + questionScore
           $('#header-game-score').textContent = gameScore
-          await delay(1200)
+          informGameRunner(questionScore)
+          await delay(1000)
           displayFollowup()
         }
         else {
@@ -381,6 +377,7 @@
         $('#question-content').innerHTML = question.followup + '<hr><button id="btn-next" class="choice">Next Question</button>'
         $('#btn-next').onclick = displayQuestion
         prepNotations()
+        window.scrollTo(0, 0)
         $('#question-content').hidden = false
         animateCSS('#question-content', 'fadeIn')
       }
@@ -411,10 +408,12 @@
           if (isNaN(Number(targetRef[1]))) {
             // console.warn(`${content} is a source: ${targetRef[1]}`)
             n.parentNode.outerHTML = `<span class="tip">${content}<span class="tip-wide">${sources[targetRef[1].toLowerCase()]}</span></span>`
+            document.querySelectorAll('span[style="color:#000000"]').forEach( node => node.replaceWith(...node.childNodes) )
           }
           else {            
             const hintIdx = Number(targetRef[1]) - 1
             n.parentNode.outerHTML = `<span class="tip">${content}<span class="tip-wide">${hints[hintIdx]}</span></span>`
+            document.querySelectorAll('span[style="color:#000000"]').forEach( node => node.replaceWith(...node.childNodes) )
           }
           //@@@ this made it recursive, but that doesn't really work for hovering. waiting for new design ideas
           // prepNotations()
@@ -470,7 +469,7 @@
 
       document.querySelectorAll('.choice').forEach( btn => btn.onclick = respond)
       prepNotations()
-      questionScore = 100
+      questionScore = Math.floor(1000 / questions.length)
       $('#header-question-score').textContent = questionScore
       animateCSS('#envelope', 'fadeIn')
       await delay(1000)
@@ -506,7 +505,6 @@
         let cats = q.categories.toLowerCase()
         q.class = cats.includes('news') ? 'News' : cats.includes('voting') ? 'Voting' : 'Civics'
 
-        $('#pre-game').hidden = true
         $('#game').hidden = false
         displayQuestion()
         return
@@ -519,45 +517,39 @@
         await request('question_play', qs.map( r => ({question: r.title, play: playId, categories: r.categories, sequence: r.sequence}) ))
 
         questions = await request(`play_detail?play=eq.${playId}`)
+        gameScore = 1000 % questions.length
         sources = await gatherSources()
         // console.log('questions', questions)
-        $('#pre-game').hidden = true
         $('#game').hidden = false
         displayQuestion()
         return
       }    
+      $('#pre-game').hidden = false
       if (params.code) $('#play_code').value = params.code
-      // const code = $('#play_code').value
-      // @@@ for testing purposes, skp pregame
       $('#btn-register').onclick = async evt => {
-      // {
         $('#pre-game').hidden = true
         $('#game').hidden = false
-        // const el = $('#flash-category h1')
 
-        // console.log('signing in', $('#play_code').value, $('#player_handle').value)
-
-        // wait for player handle before instantiating
-        const drone = new Scaledrone('s8VguFUX78IuhUH5', {data: {name: $('#player_handle').value}})
+        drone = new Scaledrone('s8VguFUX78IuhUH5', {data: {name: $('#player_handle').value}})
 
         drone.on('open', evt => console.log('Channel opened.', evt || '') )
         drone.on('err', err => alert(`Game channel failed to open: ${JSON.stringify(err)}`) )
         drone.on('close', evt => console.log('Channel closed.', evt || '') )
 
-        let room = drone.subscribe(`observable-game-${$('#play_code').value}`)
+        const room = drone.subscribe(`observable-game-${$('#play_code').value}`)
         room.on('open', evt => console.log('Room opened.', evt || '') )
         room.on('err', err => alert(`Game room failed to open: ${JSON.stringify(err)}`) )
         room.on('close', evt => console.log('Room closed.', evt || '') )
         room.on('members', async m => {
-          // console.log('m', m)
-          playId = m.filter( r => r.clientData.name.endsWith('** Game Runner **') )[0].clientData.play
-          // console.log('playId', playId)
+          let buf = m.filter( r => r.clientData && r.clientData.name.endsWith('** Game Runner **') )
+          if (buf.length == 0 || !buf[0].clientData) alert(`Could not find Game Runner for game '${$('#play_code').value}'.
+Check that you have the right number. Refresh this page and try again.`)
+          playId = buf[0].clientData.play
           questions = await request(`play_detail?play=eq.${playId}`)
+          gameScore = 1000 % questions.length
           sources = await gatherSources()
-          // console.log('questions', questions)
           displayQuestion()
         })
-
       }
     }
 

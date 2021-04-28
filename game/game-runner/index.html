@@ -55,7 +55,13 @@
         <ol></ol>
       </fieldset>
       <fieldset id="player-list"><legend>Players</legend>
-        <ul></ul>
+        <table>
+          <thead>
+            <tr><th>Player</th><th>Questions</th><th>Bonus</th><th>Final Score</th></tr>
+          </thead>
+            <tbody></tbody>
+        </table>
+        <!-- <ul></ul> -->
       </fieldset>
       <!-- <p>When everyone has entered, press the button below to issue the first question.</p>
       <p>From there, players will automatically get the next question when all the players answer the previous question. Or you can force
@@ -138,13 +144,22 @@
         // room.on('members', m => players = m )
         room.on('member_join', m => {
           players.push(m)
-          $('#player-list ul').innerHTML = players.map( p => `<li>${p.clientData.name}</li>` ).join('\n') 
+          $('#player-list tbody').innerHTML = players.filter( p => p.clientData.name )
+            .map( p => `<tr data-name="${p.clientData.name}"><td>${p.clientData.name}</td><td></td><td></td><td></td></tr>` ).join('\n')
+          // $('#player-list ul').innerHTML = players.map( p => `<li>${p.clientData.name}</li>` ).join('\n') 
         })
         room.on('member_leave', ({id}) => {
           const index = players.findIndex(m => m.id === id)
           players.splice(index, 1)
         })
 
+        room.on('message', m => {
+          // console.log('message', m)
+          console.log('player', m.member.clientData.name, 'data', m.data)
+          $(`tr[data-name=${m.member.clientData.name}] > td:nth-child(2)`).innerHTML = `#${m.data.questionNo} for ${m.data.qScore} points`
+          $(`tr[data-name=${m.member.clientData.name}] > td:nth-child(3)`).innerHTML = m.data.bonus
+          $(`tr[data-name=${m.member.clientData.name}] > td:nth-child(4)`).innerHTML = m.data.gScore
+        })
         $('#question-list ol').innerHTML = questions.map( (r, i) => `<li id="question-${i}">${r.title}</li>` ).join('\n') 
 
         $('#game-setup').hidden = true
