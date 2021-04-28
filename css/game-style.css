@@ -6,8 +6,8 @@
   --header-fore-color: white;
   --header-back-color: #4F69C1;
   --header-border-color: #4F69C1;
-  --a-link-color: white;
-  --a-visited-color: white;
+  --a-link-color: #4F69C1;
+  --a-visited-color: #4F69C1;
   --fore-color: white;
   --back-color:#384F9E;
   --highlight-color: #F2C94C;
@@ -163,6 +163,10 @@ header nav.stroke ul li a:hover:after {
 .left-side .button:hover span:after {
   opacity: 1;
   right: 0;
+}
+
+.players a {
+  color: var(--fore-color);
 }
 
 .right-side {
