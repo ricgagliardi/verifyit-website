@@ -30,7 +30,7 @@
     }
 
     body {
-      width: clamp(340px, 90%, 800px);
+      width: clamp(340px, 90%, 920px);
       margin: auto;
     }  
     /* ul {
@@ -101,9 +101,14 @@
     }
 
     /* hidden elements */
-    #question-content img,
+    /* #question-content img, */
     #header-question-score {
       display: none;
+    }
+
+    #question-content img {
+      margin: 1% auto;
+      display: block;
     }
 
     #envelope.container {
@@ -198,7 +203,7 @@
     <header class="sticky container">
       <div class="row">
         <div class="col-sm-1" style="color:grey;">
-          <span id="header-question-score">0</span><span>&#8592;</span>
+          <span id="header-question-score" style="cursor:pointer">0</span><span>&#8592;</span>
 
         </div>
         <div class="col-sm-9 col-md-10" style="text-align:center;">
