@@ -27,6 +27,11 @@
     ul {
       list-style-type: none;
     }
+    #game-over {
+      text-align: center;
+      background-color: darkred;
+      color: yellow;
+    }
   </style>
 </head>
 <body>
@@ -51,22 +56,20 @@
       to the players.  Or you can give them this url:
       <p id="game-url" style="padding:1rem">(game url here)</p>
       <p>and the game code and they can enter the game themselves.</p>
+      <p id="game-name" style="font-weight: bold"></p>
+      </fieldset>
       <fieldset id="question-list"><legend>Questions</legend>
         <ol></ol>
       </fieldset>
       <fieldset id="player-list"><legend>Players</legend>
         <table>
           <thead>
-            <tr><th>Player</th><th>Questions</th><th>Bonus</th><th>Final Score</th></tr>
+            <tr><th>Player</th><th>Questions</th><th>Bonus</th><th>Total Score</th></tr>
           </thead>
             <tbody></tbody>
         </table>
-        <!-- <ul></ul> -->
       </fieldset>
-      <!-- <p>When everyone has entered, press the button below to issue the first question.</p>
-      <p>From there, players will automatically get the next question when all the players answer the previous question. Or you can force
-      the next question by pressing the button again.</p>
-      <button id="btn-next-question">Next Question</button> -->
+      <h1 id="game-over" hidden>Game Over!</h1>
     </div>
   </div>
   <script>
@@ -80,11 +83,16 @@
       }))
       return result.flat().sort(() => Math.random() - 0.5).map( (r,i) => ({title: r.title, categories: r.categories, sequence: i}) )
     }
-
+    function checkGameOver() {
+      const playerLines = Array.from($('#player-list tbody').children)
+      const noFinished = playerLines.filter( tr => $('td:nth-child(4)').innerHTML.includes('Final') ).length
+      console.log('checking if game over', noFinished, 'of', playerLines.length, 'are finished')
+      if (noFinished == playerLines.length) $('#game-over').hidden = false
+    }
     var curQuestionNo = 0
 
     async function main() {
-      var players = []
+      // var players = []
       var questions = []
       var drone
       let codeElem = $('#play_code')
@@ -143,23 +151,39 @@
         room.on('close', evt => console.log('Room closed.', evt) )
         // room.on('members', m => players = m )
         room.on('member_join', m => {
-          players.push(m)
-          $('#player-list tbody').innerHTML = players.filter( p => p.clientData.name )
-            .map( p => `<tr data-name="${p.clientData.name}"><td>${p.clientData.name}</td><td></td><td></td><td></td></tr>` ).join('\n')
-          // $('#player-list ul').innerHTML = players.map( p => `<li>${p.clientData.name}</li>` ).join('\n') 
+          console.log('member joined', m)
+          // players.push(m)
+          if (m.clientData.name) {
+            $('#player-list tbody').innerHTML += `<tr data-name="${m.clientData.name}"><td>${m.clientData.name}</td><td></td><td></td><td></td></tr>`
+          }
+          // $('#player-list tbody').innerHTML = players.filter( p => p.clientData.name )
+          //   .map( p => `<tr data-name="${p.clientData.name}"><td>${p.clientData.name}</td><td></td><td></td><td></td></tr>` ).join('\n')
+          // // $('#player-list ul').innerHTML = players.map( p => `<li>${p.clientData.name}</li>` ).join('\n') 
         })
-        room.on('member_leave', ({id}) => {
-          const index = players.findIndex(m => m.id === id)
-          players.splice(index, 1)
+        room.on('member_leave', m => {
+          console.log('member left', m)
+          // const index = players.findIndex(m => m.id === id)
+          // players.splice(index, 1)
+          if ($(`tr[data-name=${m.clientData.name}]`)) {
+            $(`tr[data-name=${m.clientData.name}] > td:nth-child(1)`).innerHTML += '&nbsp;...left.'
+          }
         })
 
         room.on('message', m => {
-          // console.log('message', m)
-          console.log('player', m.member.clientData.name, 'data', m.data)
+          console.log('message', m)
+          console.log('player', m.member.clientData.name, 'question', m.data.questionNo, 'of', questions.length)
+          if ($(`tr[data-name=${m.member.clientData.name}]`) == null ) {
+            $('#player-list tbody').innerHTML += `<tr data-name="${m.member.clientData.name}"><td>${m.member.clientData.name}</td><td></td><td></td><td></td></tr>`
+          }
           $(`tr[data-name=${m.member.clientData.name}] > td:nth-child(2)`).innerHTML = `#${m.data.questionNo} for ${m.data.qScore} points`
           $(`tr[data-name=${m.member.clientData.name}] > td:nth-child(3)`).innerHTML = m.data.bonus
-          $(`tr[data-name=${m.member.clientData.name}] > td:nth-child(4)`).innerHTML = m.data.gScore
+          if (m.data.questionNo == questions.length)
+            $(`tr[data-name=${m.member.clientData.name}] > td:nth-child(4)`).innerHTML = `${m.data.gScore} <strong>Final</strong>`
+          else
+            $(`tr[data-name=${m.member.clientData.name}] > td:nth-child(4)`).innerHTML = m.data.gScore
+          checkGameOver()
         })
+        $('#game-name').textContent = game
         $('#question-list ol').innerHTML = questions.map( (r, i) => `<li id="question-${i}">${r.title}</li>` ).join('\n') 
 
         $('#game-setup').hidden = true
@@ -167,14 +191,6 @@
         $('#btn-copy').style.visibility = 'visible'
         $('#btn-play').style.visibility = 'visible'
       }
-      // $('#btn-next-question').onclick = evt => {
-      //   evt.preventDefault()
-      //   curQuestionNo = 0 //@@@ for testing
-      //   curQuestionNo++
-      //   drone.publish({room: `observable-game-${codeElem.value}`, message: {no: curQuestionNo}})
-      //   console.log('message sent.', curQuestionNo)
-      //   $(`#question-${curQuestionNo}`).style.fontWeight = 'bold'
-      // }
     }
 
     main()
