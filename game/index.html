@@ -31,9 +31,6 @@
       width: clamp(340px, 90%, 920px);
       margin: auto;
     }  
-    /* ul {
-      list-style-type: none; @@@ why did I have this?
-    } */
     cite {
       margin-top: -20px;
       font-size: .75rem;
@@ -68,7 +65,7 @@
       padding: 3% 0 0;
     }
 
-    .choice {
+    .choice,.final-btn {
       width: 95%;
       background: #f8f8f8;;
       border-color: #BABABA;
@@ -77,7 +74,7 @@
       color: #404144;
       font-weight: 600;
     }
-    .choice:hover {
+    .choice:hover,.final-btn:hover {
       background: #E6E6FD;
       border-color: #5352ED;
       color: #5352ED;
@@ -288,15 +285,17 @@
         Your score is <span id="game-score"></span>. Way to go<span id="player-name"></span>!
       </p>
       <div style="width:50%; margin:auto;">
-        <button class="choice">See Leaderboard</button>
-        <button class="choice">Review Game</button>
-        <button class="choice">Done for now</button>
+<!-- 
+        <button class="final-btn">See Leaderboard</button>
+        <button class="final-btn">Review Game</button>
+        <button class="final-btn">Done for now</button>
+ -->
       </div>
       <div id="social" style="padding-top:2em;">
         <div class="" style="min-height: 60px;">
-          <a href="https://www.facebook.com/Verify-It-101796721661445" class="social"><img src="./images/social/facebook-icon_32x32.png"></a>
-          <a href="https://www.instagram.com/verifyitgame/?hl=en" class="social"><img src="./images/social/instagram-icon_32x32.png"></a>
-          <a href="https://twitter.com/Veri_fy_It_Game" class="social"><img src="./images/social/twitter-icon_32x32.png"></a>
+          <a href="https://www.facebook.com/Verify-It-101796721661445" class="social" target="_blank"><img src="./images/social/facebook-icon_32x32.png"></a>
+          <a href="https://www.instagram.com/verifyitgame/?hl=en" class="social" target="_blank"><img src="./images/social/instagram-icon_32x32.png"></a>
+          <a href="https://twitter.com/Veri_fy_It_Game" class="social" target="_blank"><img src="./images/social/twitter-icon_32x32.png"></a>
         </div>
       </div>
   </div>
@@ -491,7 +490,10 @@
         await animateCSS(hdg, 'fadeIn')
         await delay(1000)
         await animateCSS(hdg, 'fadeOut')
-        document.querySelectorAll('#wrap-up button').forEach( btn => onclick= () => alert('Not implemented yet.'))
+        document.querySelectorAll('#wrap-up .final-btn').forEach( btn => {
+          console.log('alert on', btn)
+          btn.onclick = () => alert('Not implemented yet.')
+        })
         hdg.style.display = 'none'
         const badgeElem = $(`#badge-${gameScore >= 900 ? '4' : gameScore >= 700 ? '3' : gameScore >= 500 ? '2' : '1' }`)
         badgeElem.hidden = false
