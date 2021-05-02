@@ -13,14 +13,14 @@
 <body>
   <header>
       <div class="logo-container">
-        <img src="https://verifyit.buzz/images/lwv-square-logo.png" alt="logo" class="logo">
+        <img src="lwv-square-logo.png" alt="logo" class="logo">
       </div>
 
     <nav class="nav stroke">
       <ul class="nav-list">
         <!-- <li><a href="#" onclick="alert('Not implemented yet.')">Play</a></li> -->
-        <li><a href="#" id="about">About Us</a></li>
-        <li><a href="#" id="teachers">Teachers</a></li>
+        <li><a href="#" id="about" style="color:white;">About Us</a></li>
+        <li><a href="#" id="teachers" style="color:white;">Teachers</a></li>
       </ul>
     </nav>
   </header>
@@ -28,9 +28,16 @@
   <main class="container">
     <div class="row">
       <div class="col-sm-12 col-md-7 left-side animate__animated animate__fadeIn">
-        <div class="">
+        <div>
           <h1>Be a more informed citizen</h1>
-          <h3>Introducing VerifyIt, a game that challenges your knowledge of news, voting & citizenship rights.</h3>
+          <!-- <h3>Introducing <span style="color:#87CEFA">Verify</span><span style="color:rgb(247, 36, 36)">It!</span>&#8482;, a game that challenges your knowledge of news, voting & citizenship rights.</h3> -->
+          <ul>
+            <li><h3 style="margin:0;">Challenge your News Literacy skills</h3></li>
+            <li><h3 style="margin:0;">Know your Voting Rights</h3></li>
+            <li><h3 style="margin:0;">Get engaged in your community</h3></li>
+          </ul>
+          <h3>Know your Voting Rights</h3>
+          <h2 style="font-weight: bold;">PLAY <span style="color:#87CEFA">VERIFY</span><span style="color:rgb(247, 36, 36)">IT!</span>&#8482;</h2>
         </div>
         <div class="players">
             <a href="./game" class="button" id="btn-single-player" hidden><span>Single-Player</span></a>
@@ -46,11 +53,10 @@
           <img src="./game/images/banner/image-3.jpg">
         </div>
         <div class="desc-container">
-          <div style="text-transform:uppercase; text-align: center;">VerifyIt will enable you to be</div>
+          <div style="text-transform:uppercase; text-align: center;"><span style="color:#87CEFA">VERIFY</span><span style="color:rgb(245, 41, 41)">IT!</span> will help you be</div>
+          <div class="tagline">an active citizen</div>
           <div class="tagline">a thoughtful reader</div>
-          <!-- <div class="tagline">a better communicator</div> -->
           <div class="tagline">an informed voter</div>
-          <div class="tagline">an enlightened citizen</div>
         </div>
       </div>
 
@@ -61,6 +67,7 @@
   <div>
     <div class="card" style="max-width:61vw; max-height:61vh;">
       <label for="modal-control" class="modal-close" ></label>
+      <label for="modal-control" class="overlay" ></label>
       <div class="section" id="modal-heading" style="font-size: 1.5rem; font-weight: bold"></div>
       <p class="section" id="modal-content"></p>
     </div>
