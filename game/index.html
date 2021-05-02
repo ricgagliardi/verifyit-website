@@ -22,9 +22,10 @@
     }
     * {
       font-family: Quicksand, arial, sans, sans-serif;
-      font-size: max(1.2rem, 1.5vw);
+      /* font-size: max(1.2rem, 1.5vw); */
       margin: 0;
       padding: 0;
+      font-size: 3.0vh;
     }
 
     body {
@@ -41,6 +42,16 @@
       background: none;
       margin-bottom: 3%;
     }
+
+    /* p  {font-size: 1rem;}
+    h3 {font-size: 1.1rem;}
+    h2 {font-size: 1.2rem;}
+    h1 {font-size: 1.3rem;} */
+
+    /* p  {font-size: 3.0vh;} */
+    h3 {font-size: 3.3vh;}
+    h2 {font-size: 3.6vh;}
+    h1 {font-size: 4.0vh;}
 
     progress {
       height: 17px;
@@ -97,9 +108,9 @@
 
     /* hidden elements */
     /* #question-content img, */
-    #header-question-score {
+    /* #header-question-score {
       display: none;
-    }
+    } */
 
     #question-content img {
       margin: 1% auto;
@@ -120,7 +131,36 @@
       max-width: 75vh !important;
     }
 
-    .tip {
+    .pop-target {
+      color: #141413;
+      position: relative;
+      display: inline-block;
+      text-decoration: underline;
+      cursor: pointer;
+      padding: 0;
+    }
+    .popup {
+      /* font-size: 1rem !important; */
+      width: 95vw;
+      background-color: #2F80ED;
+      color: white;
+      border-radius: 16px !important;
+      border: 2px solid #C4C4C4;
+    }
+    .popup a {
+      color: #F2C94C;
+    }
+    .overlay {
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      position: fixed;
+      margin: 0;
+      border-radius: 0;
+      z-index: -10;
+    }    
+    /* .tip {
       color: #141413;
       position: relative;
       display: inline-block;
@@ -155,7 +195,7 @@
     .tip .tip-wide h3 {
       font-size: 1rem;
     }
-
+ */
     .title-container {
       margin: 2% 0;
       width: 100%;
@@ -174,9 +214,9 @@
       font-weight: bold;
     }
 
-    h1, h2, h3, h4, h5, h6 {
+    /* h1, h2, h3, h4, h5, h6 {
       font-size: 1.2rem;
-    }
+    } */
     #game-over {
       /* visibility: hidden; */
       text-align: center
@@ -229,7 +269,8 @@
     <header class="sticky container">
       <div class="row" style="width:93%">
         <div class="col-sm-1" style="color:grey;">
-          <span id="header-question-score" style="cursor:pointer">0</span><span>&#8592;</span>
+          <span id="header-question-no" style="font-size:2vh;"></span>
+          <!-- <span>&#8592;</span> -->
 
         </div>
         <div class="col-sm-9 col-md-10" style="text-align:center;">
@@ -414,7 +455,7 @@
           btn.style.setProperty('text-decoration', 'line-through')
           // evt.target.classList.add('wrong-choice')
           questionScore = Math.floor(questionScore / 2)
-          $('#header-question-score').textContent = questionScore
+          // $('#header-question-score').textContent = questionScore
         }
 
       }
@@ -431,7 +472,7 @@
         animateCSS('#question-content', 'fadeIn')
       }
 
-      function prepNotations() {
+      async function prepNotations() {
         // necessary because these spans confuse our hint notation
         // better solution is to remove from database, but I don't want to take that risk at this stage of the project
         document.querySelectorAll('span[style="color:#000000"]').forEach( node => {
@@ -445,27 +486,28 @@
             // debugger seems these only pop up when recursing on prepNotations - recursion disabled for now
             return
           }
-          const targetRef = targetNode.textContent.match(/^\s*\[(.+)\]/) //[1]
+          const targetRef = targetNode.textContent.match(/^\s*\[(.+)\]/)
           if (!targetRef) {
             console.warn('could not find target ref for', targetNode)
             // debugger
             return
           }
-          targetNode.textContent = targetNode.textContent.replace(/^\s*\[(.+)\]/, '')
-          // console.log('  prepNotation', targetRef[1], n.textContent.slice(0,20) + '...')
-          const content = n.textContent
-          if (isNaN(Number(targetRef[1]))) {
-            // console.warn(`${content} is a source: ${targetRef[1]}`)
-            n.parentNode.outerHTML = `<span class="tip">${content}<span class="tip-wide">${sources[targetRef[1].toLowerCase()]}</span></span>`
-            document.querySelectorAll('span[style="color:#000000"]').forEach( node => node.replaceWith(...node.childNodes) )
+          targetNode.textContent = targetNode.textContent.replace(/^\s*\[(.+)\]/, '') //removes the part of the text content that contains the brackets and targetRef
+          let ref = targetRef[1]
+
+          const target = n.textContent
+          let content = isNaN(Number(ref)) ? sources[ref.toLowerCase()] : hints[Number(ref) - 1]
+          if (!content) { // likely a source from a hint or source, so not preloaded
+            const resp = await request(`source_lookup?lower=eq.${ref.toLowerCase()}`)
+            content = resp[0].description
           }
-          else {            
-            const hintIdx = Number(targetRef[1]) - 1
-            n.parentNode.outerHTML = `<span class="tip">${content}<span class="tip-wide">${hints[hintIdx]}</span></span>`
-            document.querySelectorAll('span[style="color:#000000"]').forEach( node => node.replaceWith(...node.childNodes) )
-          }
-          //@@@ this made it recursive, but that doesn't really work for hovering. waiting for new design ideas
-          // prepNotations()
+          // console.log('ref', ref, 'target', target, 'content', content)
+          let idref = ref.replace(/\W/g, '-')
+          console.log(idref, n, 'check |')
+          n.parentNode.outerHTML = `<label for="mc-${idref}" class="pop-target">${target}</label><input type="checkbox" id="mc-${idref}" class="modal"><div><div class="popup card"><label for="mc-${idref}" class="overlay"></label><label for="mc-${idref}" style="position: absolute; top: 0; right: 0; cursor: pointer; ">&#10006;</label><p style="margin-top: 1.1rem">${content}</p></div></div>`
+          document.querySelectorAll('span[style="color:#000000"]').forEach( node => node.replaceWith(...node.childNodes) )
+
+          prepNotations()
         })
       }
 
@@ -543,7 +585,8 @@
       document.querySelectorAll('.choice').forEach( btn => btn.onclick = respond)
       prepNotations()
       questionScore = Math.floor(1000 / questions.length)
-      $('#header-question-score').textContent = questionScore
+      // $('#header-question-score').textContent = questionScore
+      $('#header-question-no').textContent = `${questionIdx} of ${questions.length}`
       animateCSS('#envelope', 'fadeIn')
       await delay(1000)
       $('#question-content').hidden = false
