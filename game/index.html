@@ -5,7 +5,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
    <!-- <link rel="shortcut icon" href="/retail/images/favicon.ico"> -->
-  <title>Multiplayer VerifyIt</title>
+  <title>VerifyIt</title>
   <!-- <link href="../css/style.css" rel="stylesheet" type="text/css"> -->
   <script src='https://cdn.scaledrone.com/scaledrone.min.js'></script>
   <script src='../js/lib.js'></script>
@@ -43,12 +43,6 @@
       margin-bottom: 3%;
     }
 
-    /* p  {font-size: 1rem;}
-    h3 {font-size: 1.1rem;}
-    h2 {font-size: 1.2rem;}
-    h1 {font-size: 1.3rem;} */
-
-    /* p  {font-size: 3.0vh;} */
     h3 {font-size: 3.3vh;}
     h2 {font-size: 3.6vh;}
     h1 {font-size: 4.0vh;}
@@ -327,6 +321,7 @@
         Your score is <span id="game-score"></span>. Way to go<span id="player-name"></span>!
       </p>
       <div style="width:50%; margin:auto;">
+        <button class="final-btn">Play Again?</button>
 <!-- 
         <button class="final-btn">See Leaderboard</button>
         <button class="final-btn">Review Game</button>
@@ -534,8 +529,8 @@
         await delay(1000)
         await animateCSS(hdg, 'fadeOut')
         document.querySelectorAll('#wrap-up .final-btn').forEach( btn => {
-          console.log('alert on', btn)
-          btn.onclick = () => alert('Not implemented yet.')
+          console.log('alert on', btn, btn.textContent)
+          if (btn.textContent = 'Play Again?') btn.onclick = () => location.assign('./choose-a-game.html')
         })
         hdg.style.display = 'none'
         const badgeElem = $(`#badge-${gameScore >= 900 ? '4' : gameScore >= 700 ? '3' : gameScore >= 500 ? '2' : '1' }`)
@@ -595,7 +590,7 @@
     }
 
     async function fetchQuestions(game) {
-      let gc = await request(`game_category?select=categories,no_questions&game=eq.${game}`)
+      let gc = await request(`game_category?select=categories,no_questions&game=eq.${game}&no_questions=gt.0`)
       // console.log('gc', gc)
       let result = await Promise.all(gc.map( async cat => {
         const buf = await request( `random_question?select=title&game=eq.${game}&categories=eq.${cat.categories}&limit=${cat.no_questions}`)
@@ -628,7 +623,11 @@
       }  
       if (params.game) {
         // console.log('game', params.game)
-        const playId = (await request('play', {game: params.game, play_code: 0}))[0].play
+        const resp = await fetch('https://ipapi.co/json')
+        const here = await resp.json()
+        const location = `${here.city}, ${here.region_code}`
+        console.log('single player location', location)
+        const playId = (await request('play', {game: params.game, play_code: 0, location: location}))[0].play
         // console.log('ready to start game', params.game, playId)
         const qs = await fetchQuestions(params.game)
         await request('question_play', qs.map( r => ({question: r.title, play: playId, categories: r.categories, sequence: r.sequence}) ))

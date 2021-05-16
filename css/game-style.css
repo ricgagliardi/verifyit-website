@@ -144,8 +144,9 @@ header nav.stroke ul li a:hover:after {
   font-size: max(1rem, 1.5vw);
   background-color: var(--fore-color);
   border-radius: 1.5rem;
-  width: 30%;
-  white-space: nowrap;
+  width: 90%;
+  padding: 0.5rem 0;
+  /* white-space: nowrap; */
 }
 
 .left-side .button:hover {

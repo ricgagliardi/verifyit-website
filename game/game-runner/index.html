@@ -70,7 +70,7 @@
             <tbody></tbody>
         </table>
       </fieldset>
-      <h1 id="game-over" hidden>Game Over!</h1>
+      <h1 id="game-over" hidden>Game Over.</h1>
     </div>
   </div>
   <script>
@@ -86,16 +86,28 @@
     }
     function checkGameOver() {
       const playerLines = Array.from($('#player-list tbody').children)
-      const noFinished = playerLines.filter( tr => $('td:nth-child(4)').innerHTML.includes('Final') ).length
-      console.log('checking if game over', noFinished, 'of', playerLines.length, 'are finished')
-      if (noFinished == playerLines.length) $('#game-over').hidden = false
+      const finishers = playerLines.filter( tr => tr.querySelector('td:nth-child(4)').innerHTML.includes('Final') )
+      console.log('finishers', finishers)
+      console.log('checking if game over', finishers.length, 'of', playerLines.length, 'are finished')
+      if (finishers.length == playerLines.length) {
+        const finalScores = finishers.map( tr => {
+          return {
+            handle: tr.dataset.name, 
+            score: Number(tr.querySelector('td:nth-child(4)').textContent.split(' Final')[0])
+          }
+        })
+        console.log('finalScores', finalScores)
+        const roomName = Object.keys(drone.rooms)[0]
+        drone.publish({room: roomName, message: {finalScores}})
+        $('#game-over').hidden = false
+      }
     }
     var curQuestionNo = 0
+    var drone
 
     async function main() {
       // var players = []
       var questions = []
-      var drone
       let codeElem = $('#play_code')
       codeElem.value = Math.floor(Math.random()*9999)
       let gameUrl = location.href.replace(/game-runner.*/, '')
@@ -107,7 +119,7 @@
         window.open(`${gameUrl}#code=${codeElem.value}`)
       }
       $('#game-url').textContent = gameUrl
-      let games = await request('game?select=name,description,game_category(no_questions)&name=neq.(none)&order=name')
+      let games = await request('game?select=name,description,game_category(no_questions)&name=neq.(none)&game_status=eq.Production&order=name')
       console.log('games', games)
 
       let childTmpl = $('li[data-row]')
@@ -132,10 +144,12 @@
         }
         const game = checked.value
         const play_code = codeElem.value
-        // let data = await request('play', null, {game: checked.value, play_code: codeElem.value})
-        // const playId = data[0].play
-        const playId = (await request('play', {game, play_code}))[0].play
-        console.log('ready to open game', game, playId)
+
+        const resp = await fetch('https://ipapi.co/json')
+        const here = await resp.json()
+        const location = `${here.city}, ${here.region_code}`
+        const playId = (await request('play', {game, play_code, location}))[0].play
+        console.log('play', game, play_code, location, playId)
         const questions = await fetchQuestions(game)
         console.log(questions)
         await request('question_play', questions.map( r => ({question: r.title, play: playId, categories: r.categories, sequence: r.sequence}) ))
@@ -154,7 +168,7 @@
         room.on('member_join', m => {
           console.log('member joined', m)
           // players.push(m)
-          if (m.clientData.name) {
+          if (m.clientData && m.clientData.name) {
             $('#player-list tbody').innerHTML += `<tr data-name="${m.clientData.name}"><td>${m.clientData.name}</td><td></td><td></td><td></td></tr>`
           }
           // $('#player-list tbody').innerHTML = players.filter( p => p.clientData.name )
@@ -165,13 +179,14 @@
           console.log('member left', m)
           // const index = players.findIndex(m => m.id === id)
           // players.splice(index, 1)
-          if ($(`tr[data-name=${m.clientData.name}]`)) {
+          if (m.clientData && m.clientDate.name && $(`tr[data-name=${m.clientData.name}]`)) {
             $(`tr[data-name=${m.clientData.name}] > td:nth-child(1)`).innerHTML += '&nbsp;...left.'
           }
         })
 
         room.on('message', m => {
           console.log('message', m)
+          if (!(m.member && m.member.clientData && m.member.clientData.name) || m.member.clientData.name.startsWith('**')) return
           console.log('player', m.member.clientData.name, 'question', m.data.questionNo, 'of', questions.length)
           if ($(`tr[data-name=${m.member.clientData.name}]`) == null ) {
             $('#player-list tbody').innerHTML += `<tr data-name="${m.member.clientData.name}"><td>${m.member.clientData.name}</td><td></td><td></td><td></td></tr>`

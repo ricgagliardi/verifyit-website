@@ -13,14 +13,14 @@
 <body>
   <header>
       <div class="logo-container">
-        <img src="lwv-square-logo.png" alt="logo" class="logo">
+        <a href="https://www.lwvalameda.org" target="_blank"><img src="lwv-square-logo.png" alt="logo" class="logo"></a>
       </div>
 
     <nav class="nav stroke">
       <ul class="nav-list">
         <!-- <li><a href="#" onclick="alert('Not implemented yet.')">Play</a></li> -->
         <li><a href="#" id="about" style="color:white;">About Us</a></li>
-        <li><a href="#" id="teachers" style="color:white;">Teachers</a></li>
+        <li><a href="#" id="teachers" style="color:white;">Teachers/Presenters</a></li>
       </ul>
     </nav>
   </header>
@@ -32,16 +32,37 @@
           <h1>Be a more informed citizen</h1>
           <!-- <h3>Introducing <span style="color:#87CEFA">Verify</span><span style="color:rgb(247, 36, 36)">It!</span>&#8482;, a game that challenges your knowledge of news, voting & citizenship rights.</h3> -->
           <ul>
+            <li><h3 style="margin:0;">Engage in Civics in your community</h3></li>
             <li><h3 style="margin:0;">Challenge your News Literacy skills</h3></li>
-            <li><h3 style="margin:0;">Know your Voting Rights</h3></li>
-            <li><h3 style="margin:0;">Get engaged in your community</h3></li>
+            <li><h3 style="margin:0;">Exercise your Voting Rights</h3></li>
           </ul>
           <h2 style="font-weight: bold;">PLAY <span style="color:#87CEFA">VERIFY</span><span style="color:rgb(247, 36, 36)">IT!</span>&#8482;</h1>
         </div>
-        <div class="players">
-            <a href="./game" class="button" id="btn-single-player" hidden><span>Single-Player</span></a>
-            <a href="./game" class="button"><span>Multi-Player</span></a><br>
-            <a href="./game/game-runner" style="font-size:2.2vh;color:white;padding-left:44%">I'm the game runner</a>
+        <div class="players container" style="text-align:center">
+          <div class="row">
+            <div class="col-sm">
+              <a href="./game" class="button" id="btn-single-player" hidden><span>Single-Player</span></a><br>
+              <a href="./game/choose-a-game.html" style="font-size:2.2vh;color:white;">Choose the game</a>
+            </div>
+            <div class="col-sm">
+              <a href="./game" class="button"><span>Multi-Player</span></a><br>
+              <a href="./game/game-runner" style="font-size:2.2vh;color:white;">I'm the game runner</a>
+            </div>
+          </div>
+          <!-- <div class="row">
+            <a href="./game" class="button col-sm-4" id="btn-single-player" hidden><span>Single-Player</span></a>
+            <a href="./game" class="button col-sm-4"><span>Multi-Player</span></a>
+          </div>
+          <div class="row">
+            <div class="col-sm-4">
+
+              <a href="./game/choose-a-game.html" style="font-size:2.2vh;color:white;">Choose the game</a>
+            </div>
+            <div class="col-sm-4">
+
+              <a href="./game/game-runner" style="font-size:2.2vh;color:white;">I'm the game runner</a>
+            </div>
+          </div> -->
         </div>
       </div>
 
