@@ -51,42 +51,10 @@
       }))
       return result.flat().sort(() => Math.random() - 0.5).map( (r,i) => ({title: r.title, categories: r.categories, sequence: i}) )
     }
-    // function checkGameOver() {
-    //   const playerLines = Array.from($('#player-list tbody').children)
-    //   const finishers = playerLines.filter( tr => tr.querySelector('td:nth-child(4)').innerHTML.includes('Final') )
-    //   console.log('finishers', finishers)
-    //   console.log('checking if game over', finishers.length, 'of', playerLines.length, 'are finished')
-    //   if (finishers.length == playerLines.length) {
-    //     const finalScores = finishers.map( tr => {
-    //       return {
-    //         handle: tr.dataset.name, 
-    //         score: Number(tr.querySelector('td:nth-child(4)').textContent.split(' Final')[0])
-    //       }
-    //     })
-    //     console.log('finalScores', finalScores)
-    //     const roomName = Object.keys(drone.rooms)[0]
-    //     drone.publish({room: roomName, message: {finalScores}})
-    //     $('#game-over').hidden = false
-    //   }
-    // }
-    // var curQuestionNo = 0
-    // var drone
 
     async function main() {
-      // var players = []
       var questions = []
-      // let codeElem = $('#play_code')
-      // codeElem.value = Math.floor(Math.random()*9999)
-      // let gameUrl = location.href.replace(/game-runner.*/, '')
-      // $('#btn-copy').onclick = evt => {
-      //   navigator.clipboard.writeText(`${gameUrl}#code=${codeElem.value}`)
-      //   iziToast.show({title: 'Copied to clipboard.'})
-      // }
-      // $('#btn-play').onclick = evt => {
-      //   window.open(`${gameUrl}#code=${codeElem.value}`)
-      // }
-      // $('#game-url').textContent = gameUrl
-      let games = await request('game?select=name,description,game_category(no_questions)&name=neq.(none)&game_status=eq.Production&order=name')
+      let games = await request('game?select=name,description,game_category(no_questions)&name=neq.(none)&game_status=eq.Production&is_available_single_player=is.true&order=name')
       console.log('games', games)
 
       let childTmpl = $('li[data-row]')
@@ -111,69 +79,6 @@
         }
         const game = checked.value
         location.assign(`./index.html#game=${game}`)
-      //   const play_code = codeElem.value
-
-      //   const resp = await fetch('https://ipapi.co/json')
-      //   const here = await resp.json()
-      //   const location = `${here.city}, ${here.region_code}`
-      //   const playId = (await request('play', {game, play_code, location}))[0].play
-      //   console.log('play', game, play_code, location, playId)
-      //   const questions = await fetchQuestions(game)
-      //   console.log(questions)
-      //   await request('question_play', questions.map( r => ({question: r.title, play: playId, categories: r.categories, sequence: r.sequence}) ))
-
-      //   drone = new Scaledrone('s8VguFUX78IuhUH5', {data: {name: '** Game Runner **', play: playId}})
-      //   drone.on('open', evt => console.log('Channel opened.', evt) )
-      //   drone.on('err', err => alert(`Game channel failed to open: ${JSON.stringify(err)}`) )
-      //   drone.on('close', evt => console.log('Channel closed.', evt) )
-
-      //   const room = drone.subscribe(`observable-game-${codeElem.value}`)
-      //   // room.on('open', err => err && alert(`Game room failed to open: ${JSON.stringify(err)}`) )
-      //   room.on('open', evt => console.log('Room opened.', evt) )
-      //   room.on('err', err => alert(`Game room failed to open: ${JSON.stringify(err)}`) )
-      //   room.on('close', evt => console.log('Room closed.', evt) )
-      //   // room.on('members', m => players = m )
-      //   room.on('member_join', m => {
-      //     console.log('member joined', m)
-      //     // players.push(m)
-      //     if (m.clientData && m.clientData.name) {
-      //       $('#player-list tbody').innerHTML += `<tr data-name="${m.clientData.name}"><td>${m.clientData.name}</td><td></td><td></td><td></td></tr>`
-      //     }
-      //     // $('#player-list tbody').innerHTML = players.filter( p => p.clientData.name )
-      //     //   .map( p => `<tr data-name="${p.clientData.name}"><td>${p.clientData.name}</td><td></td><td></td><td></td></tr>` ).join('\n')
-      //     // // $('#player-list ul').innerHTML = players.map( p => `<li>${p.clientData.name}</li>` ).join('\n') 
-      //   })
-      //   room.on('member_leave', m => {
-      //     console.log('member left', m)
-      //     // const index = players.findIndex(m => m.id === id)
-      //     // players.splice(index, 1)
-      //     if (m.clientData && m.clientDate.name && $(`tr[data-name=${m.clientData.name}]`)) {
-      //       $(`tr[data-name=${m.clientData.name}] > td:nth-child(1)`).innerHTML += '&nbsp;...left.'
-      //     }
-      //   })
-
-      //   room.on('message', m => {
-      //     console.log('message', m)
-      //     if (!(m.member && m.member.clientData && m.member.clientData.name) || m.member.clientData.name.startsWith('**')) return
-      //     console.log('player', m.member.clientData.name, 'question', m.data.questionNo, 'of', questions.length)
-      //     if ($(`tr[data-name=${m.member.clientData.name}]`) == null ) {
-      //       $('#player-list tbody').innerHTML += `<tr data-name="${m.member.clientData.name}"><td>${m.member.clientData.name}</td><td></td><td></td><td></td></tr>`
-      //     }
-      //     $(`tr[data-name=${m.member.clientData.name}] > td:nth-child(2)`).innerHTML = `#${m.data.questionNo} for ${m.data.qScore} points`
-      //     $(`tr[data-name=${m.member.clientData.name}] > td:nth-child(3)`).innerHTML = m.data.bonus
-      //     if (m.data.questionNo == questions.length)
-      //       $(`tr[data-name=${m.member.clientData.name}] > td:nth-child(4)`).innerHTML = `${m.data.gScore} <strong>Final</strong>`
-      //     else
-      //       $(`tr[data-name=${m.member.clientData.name}] > td:nth-child(4)`).innerHTML = m.data.gScore
-      //     checkGameOver()
-      //   })
-      //   $('#game-name').textContent = game
-      //   $('#question-list ol').innerHTML = questions.map( (r, i) => `<li id="question-${i}">${r.title}</li>` ).join('\n') 
-
-      //   $('#game-setup').hidden = true
-      //   $('#game-start').hidden = false
-      //   $('#btn-copy').style.visibility = 'visible'
-      //   $('#btn-play').style.visibility = 'visible'
       }
     }
 
